@@ -1,6 +1,6 @@
-package br.com.luizgabriel.farmaorder.auth.domain;
+package br.com.luizgabriel.farmaorder.auth;
 
-import br.com.luizgabriel.farmaorder.auth.shared.Auditable;
+import br.com.luizgabriel.farmaorder.shared.Auditable;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;

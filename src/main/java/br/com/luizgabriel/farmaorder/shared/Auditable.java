@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.shared;
+package br.com.luizgabriel.farmaorder.shared;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

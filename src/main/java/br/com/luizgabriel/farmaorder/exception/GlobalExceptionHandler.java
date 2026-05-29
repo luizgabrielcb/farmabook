@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.exception;
+package br.com.luizgabriel.farmaorder.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -52,6 +52,16 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(defaultErrorMessage);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<DefaultErrorMessage> handleConflictException(ConflictException e) {
+        var defaultErrorMessage = DefaultErrorMessage.builder()
+                .message(e.getMessage())
+                .status(HttpStatus.CONFLICT.value())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(defaultErrorMessage);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

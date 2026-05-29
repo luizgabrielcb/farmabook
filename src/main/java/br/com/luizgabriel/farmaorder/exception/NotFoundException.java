@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.exception;
+package br.com.luizgabriel.farmaorder.exception;
 
 public class NotFoundException extends RuntimeException {
 
