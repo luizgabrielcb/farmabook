@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ public class UserService {
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public UserPostResponse save(UserPostRequest userPostRequest) {
         validateNameAlreadyInUse(userPostRequest.name());
 
@@ -34,17 +36,20 @@ public class UserService {
         return mapper.toUserPostResponse(savedUser);
     }
 
+    @Transactional(readOnly = true)
     public Page<UserGetResponse> findAll(Pageable pageable) {
         return repository.findAll(pageable)
                 .map(mapper::toUserGetResponse);
     }
 
+    @Transactional(readOnly = true)
     public UserGetResponse findById(UUID id) {
         var user = findByIdOrThrowNotFoundException(id);
 
         return mapper.toUserGetResponse(user);
     }
 
+    @Transactional
     public UserPutResponse update(UUID id, UserPutRequest userPutRequest) {
         var user = findByIdOrThrowNotFoundException(id);
 
@@ -58,12 +63,14 @@ public class UserService {
         return mapper.toUserPutResponse(updatedUser);
     }
 
+    @Transactional
     public void delete(UUID id) {
         var user = findByIdOrThrowNotFoundException(id);
 
         repository.delete(user);
     }
 
+    @Transactional
     public void activate(UUID id) {
         var user = findByIdOrThrowNotFoundException(id);
 
@@ -72,6 +79,7 @@ public class UserService {
         repository.save(user);
     }
 
+    @Transactional
     public void deactivate(UUID id) {
         var user = findByIdOrThrowNotFoundException(id);
 
