@@ -1,6 +1,6 @@
 package br.com.luizgabriel.farmaorder.auth.dto;
 
-import br.com.luizgabriel.farmaorder.auth.domain.UserRole;
+import br.com.luizgabriel.farmaorder.auth.UserRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;

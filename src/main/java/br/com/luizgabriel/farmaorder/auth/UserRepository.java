@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.domain;
+package br.com.luizgabriel.farmaorder.auth;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

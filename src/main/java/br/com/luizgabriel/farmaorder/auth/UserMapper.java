@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.domain;
+package br.com.luizgabriel.farmaorder.auth;
 
 import br.com.luizgabriel.farmaorder.auth.dto.UserGetResponse;
 import br.com.luizgabriel.farmaorder.auth.dto.UserPostRequest;

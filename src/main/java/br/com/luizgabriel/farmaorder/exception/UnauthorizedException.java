@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.exception;
+package br.com.luizgabriel.farmaorder.exception;
 
 public class UnauthorizedException extends RuntimeException {
 

@@ -1,4 +1,4 @@
-package br.com.luizgabriel.farmaorder.auth.domain;
+package br.com.luizgabriel.farmaorder.auth;
 
 import br.com.luizgabriel.farmaorder.auth.dto.*;
 import jakarta.validation.Valid;
@@ -64,20 +64,6 @@ public class UserController {
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
         service.deactivate(id);
-
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/validate-pin")
-    public ResponseEntity<UserGetResponse> validatePin(@RequestBody @Valid ValidatePinRequest request) {
-        var userGetResponse = service.validatePin(request.pin());
-
-        return ResponseEntity.ok(userGetResponse);
-    }
-
-    @PostMapping("/change-pin")
-    public ResponseEntity<Void> changePin(@RequestBody @Valid ChangePinRequest request) {
-        service.changePin(request.currentPin(), request.newPin());
 
         return ResponseEntity.noContent().build();
     }
