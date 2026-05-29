@@ -8,7 +8,7 @@ CREATE TABLE users
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     deleted_at TIMESTAMPTZ,
-    CONSTRAINT chk_users_role CHECK (role IN ('VENDEDOR', 'ADMIN'))
+    CONSTRAINT chk_users_role CHECK (role IN ('SELLER', 'ADMIN'))
 );
 
 CREATE INDEX idx_users_active ON users (active) WHERE deleted_at IS NULL;

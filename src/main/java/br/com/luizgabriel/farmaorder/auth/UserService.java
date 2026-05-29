@@ -15,8 +15,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final UserRepository repository;
+    private final UserMapper mapper;
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
 
@@ -27,41 +27,41 @@ public class UserService {
 
         var pinHash = passwordEncoder.encode(userPostRequest.pin());
 
-        var user = userMapper.toUser(userPostRequest, pinHash);
+        var user = mapper.toUser(userPostRequest, pinHash);
 
-        var savedUser = userRepository.save(user);
+        var savedUser = repository.save(user);
 
-        return userMapper.toUserPostResponse(savedUser);
+        return mapper.toUserPostResponse(savedUser);
     }
 
     public Page<UserGetResponse> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable)
-                .map(userMapper::toUserGetResponse);
+        return repository.findAll(pageable)
+                .map(mapper::toUserGetResponse);
     }
 
     public UserGetResponse findById(UUID id) {
         var user = findByIdOrThrowNotFoundException(id);
 
-        return userMapper.toUserGetResponse(user);
+        return mapper.toUserGetResponse(user);
     }
 
     public UserPutResponse update(UUID id, UserPutRequest userPutRequest) {
-        validateNameAlreadyInUse(userPutRequest.name(), id);
-
         var user = findByIdOrThrowNotFoundException(id);
+
+        validateNameAlreadyInUse(userPutRequest.name(), id);
 
         user.setName(userPutRequest.name());
         user.setRole(userPutRequest.role());
 
-        var updatedUser = userRepository.save(user);
+        var updatedUser = repository.save(user);
 
-        return userMapper.toUserPutResponse(updatedUser);
+        return mapper.toUserPutResponse(updatedUser);
     }
 
     public void delete(UUID id) {
         var user = findByIdOrThrowNotFoundException(id);
 
-        userRepository.delete(user);
+        repository.delete(user);
     }
 
     public void activate(UUID id) {
@@ -69,7 +69,7 @@ public class UserService {
 
         user.setActive(true);
 
-        userRepository.save(user);
+        repository.save(user);
     }
 
     public void deactivate(UUID id) {
@@ -77,24 +77,24 @@ public class UserService {
 
         user.setActive(false);
 
-        userRepository.save(user);
+        repository.save(user);
     }
 
     private User findByIdOrThrowNotFoundException(UUID id) {
-        return userRepository.findById(id)
+        return repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
     }
 
     private void validateNameAlreadyInUse(String name) {
-        userRepository.findByNameIgnoreCase(name)
+        repository.findByNameIgnoreCase(name)
                 .ifPresent(u -> {
                     throw new ConflictException("Name already in use");
                 });
     }
 
-    private void validateNameAlreadyInUse(String name, UUID excludeId) {
-        userRepository.findByNameIgnoreCase(name)
-                .filter(u -> !u.getId().equals(excludeId))
+    private void validateNameAlreadyInUse(String name, UUID userId) {
+        repository.findByNameIgnoreCase(name)
+                .filter(u -> !u.getId().equals(userId))
                 .ifPresent(u -> {
                     throw new ConflictException("Name already in use");
                 });
