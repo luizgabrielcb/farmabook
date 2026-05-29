@@ -11,7 +11,7 @@ import org.mapstruct.Mapping;
 public interface UserMapper {
 
     @Mapping(target = "pinHash", source = "pinHash")
-    User toUser(UserPostRequest request, String pinHash);
+    User toUser(UserPostRequest userPostRequest, String pinHash);
 
     UserPostResponse toUserPostResponse(User user);
 
