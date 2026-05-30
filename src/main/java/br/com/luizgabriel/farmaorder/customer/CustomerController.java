@@ -1,6 +1,7 @@
 package br.com.luizgabriel.farmaorder.customer;
 
 import br.com.luizgabriel.farmaorder.customer.dto.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,7 @@ public class CustomerController {
     private final CustomerService service;
 
     @PostMapping
-    public ResponseEntity<CustomerPostResponse> save(CustomerPostRequest customerPostRequest) {
+    public ResponseEntity<CustomerPostResponse> save(@RequestBody @Valid CustomerPostRequest customerPostRequest) {
         var customerPostResponse = service.save(customerPostRequest);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(customerPostResponse);
@@ -33,14 +34,15 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CustomerGetResponse> findById(UUID id) {
+    public ResponseEntity<CustomerGetResponse> findById(@PathVariable UUID id) {
         var customerGetResponse = service.findById(id);
 
         return ResponseEntity.ok(customerGetResponse);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerPutResponse> update(@PathVariable UUID id, @RequestBody CustomerPutRequest customerPutRequest) {
+    public ResponseEntity<CustomerPutResponse> update(@PathVariable UUID id,
+                                                      @RequestBody @Valid CustomerPutRequest customerPutRequest) {
         var customerPutResponse = service.update(id, customerPutRequest);
 
         return ResponseEntity.ok(customerPutResponse);

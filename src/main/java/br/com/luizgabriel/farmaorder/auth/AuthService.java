@@ -6,6 +6,7 @@ import br.com.luizgabriel.farmaorder.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -17,6 +18,7 @@ public class AuthService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional(readOnly = true)
     public UserGetResponse validatePin(String pin) {
         var user = findActiveUserMatchingPin(pin)
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
@@ -24,6 +26,7 @@ public class AuthService {
         return userMapper.toUserGetResponse(user);
     }
 
+    @Transactional
     public void changePin(String currentPin, String newPin) {
         if (currentPin.equals(newPin)) {
             throw new ConflictException("New PIN must be different from current PIN");
