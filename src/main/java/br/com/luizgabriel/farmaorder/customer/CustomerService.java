@@ -21,10 +21,7 @@ public class CustomerService {
     @Transactional
     public CustomerPostResponse save(CustomerPostRequest customerPostRequest) {
         validateNameAlreadyExists(customerPostRequest.name());
-
-        if (customerPostRequest.phoneNumber() != null) {
-            validatePhoneNumberAlreadyInUse(customerPostRequest.phoneNumber());
-        }
+        validatePhoneNumberAlreadyInUse(customerPostRequest.phoneNumber());
 
         var customer = mapper.toCustomer(customerPostRequest);
 
@@ -51,12 +48,10 @@ public class CustomerService {
         var customer = findByIdOrThrowNotFoundException(id);
 
         validateNameAlreadyExists(customerPutRequest.name(), id);
-        customer.setName(customerPutRequest.name());
+        validatePhoneNumberAlreadyInUse(customerPutRequest.phoneNumber(), id);
 
-        if (customerPutRequest.phoneNumber() != null) {
-            validatePhoneNumberAlreadyInUse(customerPutRequest.phoneNumber(), id);
-            customer.setPhoneNumber(customerPutRequest.phoneNumber());
-        }
+        customer.setName(customerPutRequest.name());
+        customer.setPhoneNumber(customerPutRequest.phoneNumber());
 
         var updatedCustomer = repository.save(customer);
 
@@ -91,6 +86,7 @@ public class CustomerService {
     }
 
     private void validatePhoneNumberAlreadyInUse(String phoneNumber) {
+        if (phoneNumber == null) return;
         repository.findByPhoneNumber(phoneNumber)
                 .ifPresent(c -> {
                     throw new ConflictException(
@@ -99,6 +95,7 @@ public class CustomerService {
     }
 
     private void validatePhoneNumberAlreadyInUse(String phoneNumber, UUID customerId) {
+        if (phoneNumber == null) return;
         repository.findByPhoneNumber(phoneNumber)
                 .filter(c -> !c.getId().equals(customerId))
                 .ifPresent(c -> {

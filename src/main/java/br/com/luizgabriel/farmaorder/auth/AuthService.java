@@ -26,6 +26,12 @@ public class AuthService {
         return userMapper.toUserGetResponse(user);
     }
 
+    @Transactional(readOnly = true)
+    public User authenticatedUser(String pin) {
+        return findActiveUserMatchingPin(pin)
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+    }
+
     @Transactional
     public void changePin(String currentPin, String newPin) {
         if (currentPin.equals(newPin)) {
