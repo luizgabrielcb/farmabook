@@ -254,8 +254,10 @@ public class OrderService {
                 previousStatus.ordinal() < OrderStatus.RECEIVED.ordinal()
                         && newStatus == OrderStatus.RECEIVED;
 
+
         if (transitionedToReceived) {
-            // TODO: notificationService.generateWhatsAppLink(order)
+            var customer = customerService.findByIdOrThrowNotFound(order.getCustomerId());
+
             order.setNotifiedAt(Instant.now());
         }
     }
