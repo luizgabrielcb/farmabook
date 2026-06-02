@@ -38,14 +38,14 @@ public class CustomerService {
 
     @Transactional(readOnly = true)
     public CustomerGetResponse findById(UUID id) {
-        var customer = findByIdOrThrowNotFoundException(id);
+        var customer = findByIdOrThrowNotFound(id);
 
         return mapper.toCustomerGetResponse(customer);
     }
 
     @Transactional
     public CustomerPutResponse update(UUID id, CustomerPutRequest customerPutRequest) {
-        var customer = findByIdOrThrowNotFoundException(id);
+        var customer = findByIdOrThrowNotFound(id);
 
         validateNameAlreadyExists(customerPutRequest.name(), id);
         validatePhoneNumberAlreadyInUse(customerPutRequest.phoneNumber(), id);
@@ -60,12 +60,12 @@ public class CustomerService {
 
     @Transactional
     public void delete(UUID id) {
-        var customer = findByIdOrThrowNotFoundException(id);
+        var customer = findByIdOrThrowNotFound(id);
 
         repository.delete(customer);
     }
 
-    private Customer findByIdOrThrowNotFoundException(UUID id) {
+    public Customer findByIdOrThrowNotFound(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Customer with id '" + id + "' not found"));
     }
