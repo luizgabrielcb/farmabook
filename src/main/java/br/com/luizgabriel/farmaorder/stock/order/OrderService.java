@@ -20,6 +20,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository repository;
+    private final OrderItemRepository orderItemRepository;
     private final OrderMapper mapper;
     private final CustomerService customerService;
 
@@ -82,13 +83,14 @@ public class OrderService {
         ensureOrderMutable(order);
 
         var item = mapper.toOrderItem(request);
-
         item.setOrder(order);
-        order.getItems().add(item);
+
+        var savedItem = orderItemRepository.save(item);
+        order.getItems().add(savedItem);
 
         recalculateOrderStatus(order);
 
-        return mapper.toOrderItemGetResponse(item);
+        return mapper.toOrderItemGetResponse(savedItem);
     }
 
     @Transactional
@@ -157,7 +159,7 @@ public class OrderService {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
 
         order.getItems().stream()
-                .filter(i -> i.getStatus() == OrderItemStatus.PENDING)
+                .filter(i -> i.getStatus() != OrderItemStatus.DELIVERED)
                 .forEach(i -> applyMarkAsOrdered(i, actor));
 
         recalculateOrderStatus(order);
@@ -168,7 +170,8 @@ public class OrderService {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
 
         order.getItems().stream()
-                .filter(i -> i.getStatus() == OrderItemStatus.ORDERED)
+                .filter(i -> i.getStatus() == OrderItemStatus.ORDERED
+                        || i.getStatus() == OrderItemStatus.RECEIVED)
                 .forEach(i -> applyMarkAsReceived(i, actor));
 
         recalculateOrderStatus(order);
@@ -186,10 +189,17 @@ public class OrderService {
     }
 
     private void applyMarkAsOrdered(OrderItem item, User actor) {
-        if (item.getStatus() != OrderItemStatus.PENDING) {
+        if (item.getStatus() == OrderItemStatus.DELIVERED) {
             throw new ConflictException(
-                    "Item with id '" + item.getId() + "' cannot be marked as ORDERED from status " + item.getStatus());
+                    "Item with id '" + item.getId() + "' is DELIVERED and cannot be marked as ORDERED");
         }
+        if (item.getStatus() == OrderItemStatus.ORDERED) {
+            return;
+        }
+
+        item.setReceivedById(null);
+        item.setReceivedByName(null);
+        item.setReceivedAt(null);
 
         item.setStatus(OrderItemStatus.ORDERED);
         item.setOrderedById(actor.getId());
@@ -198,9 +208,16 @@ public class OrderService {
     }
 
     private void applyMarkAsReceived(OrderItem item, User actor) {
-        if (item.getStatus() != OrderItemStatus.ORDERED) {
+        if (item.getStatus() == OrderItemStatus.PENDING) {
             throw new ConflictException(
-                    "Item with id '" + item.getId() + "' cannot be marked as RECEIVED from status " + item.getStatus());
+                    "Item with id '" + item.getId() + "' cannot be marked as RECEIVED from PENDING");
+        }
+        if (item.getStatus() == OrderItemStatus.DELIVERED) {
+            throw new ConflictException(
+                    "Item with id '" + item.getId() + "' is DELIVERED and cannot be marked as RECEIVED");
+        }
+        if (item.getStatus() == OrderItemStatus.RECEIVED) {
+            return;
         }
 
         item.setStatus(OrderItemStatus.RECEIVED);
