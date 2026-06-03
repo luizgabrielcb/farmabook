@@ -4,6 +4,7 @@ import br.com.luizgabriel.farmaorder.auth.User;
 import br.com.luizgabriel.farmaorder.customer.CustomerService;
 import br.com.luizgabriel.farmaorder.exception.ConflictException;
 import br.com.luizgabriel.farmaorder.exception.NotFoundException;
+import br.com.luizgabriel.farmaorder.notification.NotificationService;
 import br.com.luizgabriel.farmaorder.stock.order.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,7 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OrderMapper mapper;
     private final CustomerService customerService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public Page<OrderGetResponse> findAll(Pageable pageable) {
@@ -256,9 +258,9 @@ public class OrderService {
 
 
         if (transitionedToReceived) {
-            var customer = customerService.findByIdOrThrowNotFound(order.getCustomerId());
+            var notification = notificationService.generateForOrderReceived(order);
 
-            order.setNotifiedAt(Instant.now());
+            order.setNotifiedAt(notification.sentAt());
         }
     }
 
