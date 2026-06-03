@@ -1,0 +1,21 @@
+{
+  "content": [
+    {
+      "name": "João Vendedor",
+      "role": "SELLER",
+      "active": true
+    },
+    {
+      "name": "Maria Vendedora",
+      "role": "SELLER",
+      "active": true
+    },
+    {
+      "name": "User Teste",
+      "role": "ADMIN",
+      "active": true
+    }
+  ],
+  "totalElements": 3,
+  "totalPages": 1
+}
