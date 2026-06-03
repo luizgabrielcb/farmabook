@@ -1,0 +1,4 @@
+{
+  "message": "${json-unit.any-string}",
+  "status": 404
+}
