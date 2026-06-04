@@ -1,0 +1,4 @@
+{
+  "message": "Item with id '00000000-0000-0000-0000-000000000011' cannot be marked as DELIVERED from status ORDERED",
+  "status": 409
+}

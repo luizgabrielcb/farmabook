@@ -1,0 +1,4 @@
+{
+  "message": "Pin must be 1 to 4 digits",
+  "status": 400
+}

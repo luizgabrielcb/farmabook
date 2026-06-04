@@ -1,0 +1,4 @@
+{
+  "message": "Order with id '00000000-0000-0000-0000-000000000010' is DELIVERED and cannot be deleted",
+  "status": 409
+}

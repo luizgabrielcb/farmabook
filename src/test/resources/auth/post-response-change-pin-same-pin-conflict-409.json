@@ -1,0 +1,4 @@
+{
+  "message": "New PIN must be different from current PIN",
+  "status": 409
+}
