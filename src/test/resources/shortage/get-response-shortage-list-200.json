@@ -1,0 +1,16 @@
+{
+  "content": [
+    {
+      "product": "Dipirona 500mg",
+      "category": "ETICO",
+      "quantity": 5,
+      "status": "PENDING",
+      "createdByName": "User Teste",
+      "orderedById": null,
+      "orderedByName": null,
+      "orderedAt": null
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1
+}

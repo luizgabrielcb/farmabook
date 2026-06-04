@@ -22,6 +22,7 @@ class UserControllerTestIT extends IntegrationTestConfig {
 
     private static final String URL = "/users";
     private static final String AUTH_PIN = "1234";
+    private static final UUID NONEXISTENT_ID = UUID.fromString("00000000-0000-0000-0000-999999999999");
 
     @Autowired
     private FileUtils fileUtils;
@@ -175,7 +176,7 @@ class UserControllerTestIT extends IntegrationTestConfig {
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
                 .when()
-                .get(URL + "/" + UUID.randomUUID())
+                .get(URL + "/" + NONEXISTENT_ID)
                 .then()
                 .log().all()
                 .statusCode(404)
@@ -244,7 +245,7 @@ class UserControllerTestIT extends IntegrationTestConfig {
                 .contentType(ContentType.JSON)
                 .body(request)
                 .when()
-                .put(URL + "/" + UUID.randomUUID())
+                .put(URL + "/" + NONEXISTENT_ID)
                 .then()
                 .log().all()
                 .statusCode(404)
@@ -299,7 +300,7 @@ class UserControllerTestIT extends IntegrationTestConfig {
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
                 .when()
-                .delete(URL + "/" + UUID.randomUUID())
+                .delete(URL + "/" + NONEXISTENT_ID)
                 .then()
                 .log().all()
                 .statusCode(404)
@@ -334,7 +335,7 @@ class UserControllerTestIT extends IntegrationTestConfig {
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
                 .when()
-                .patch(URL + "/" + UUID.randomUUID() + "/activate")
+                .patch(URL + "/" + NONEXISTENT_ID + "/activate")
                 .then()
                 .log().all()
                 .statusCode(404)
@@ -369,7 +370,7 @@ class UserControllerTestIT extends IntegrationTestConfig {
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
                 .when()
-                .patch(URL + "/" + UUID.randomUUID() + "/deactivate")
+                .patch(URL + "/" + NONEXISTENT_ID + "/deactivate")
                 .then()
                 .log().all()
                 .statusCode(404)

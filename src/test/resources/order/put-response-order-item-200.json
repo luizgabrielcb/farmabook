@@ -1,0 +1,15 @@
+{
+  "product": "Paracetamol 750mg",
+  "category": "SIMILAR",
+  "quantity": 3,
+  "status": "PENDING",
+  "orderedById": null,
+  "orderedByName": null,
+  "orderedAt": null,
+  "receivedById": null,
+  "receivedByName": null,
+  "receivedAt": null,
+  "deliveredById": null,
+  "deliveredByName": null,
+  "deliveredAt": null
+}

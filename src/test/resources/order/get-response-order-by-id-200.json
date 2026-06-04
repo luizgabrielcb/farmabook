@@ -1,0 +1,23 @@
+{
+  "customerName": "Maria Silva",
+  "status": "PENDING",
+  "notifiedAt": null,
+  "createdByName": "User Teste",
+  "items": [
+    {
+      "product": "Dipirona 500mg",
+      "category": "ETICO",
+      "quantity": 5,
+      "status": "PENDING",
+      "orderedById": null,
+      "orderedByName": null,
+      "orderedAt": null,
+      "receivedById": null,
+      "receivedByName": null,
+      "receivedAt": null,
+      "deliveredById": null,
+      "deliveredByName": null,
+      "deliveredAt": null
+    }
+  ]
+}

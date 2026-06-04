@@ -1,0 +1,14 @@
+{
+  "content": [
+    {
+      "name": "José Santos",
+      "phoneNumber": "11888888888"
+    },
+    {
+      "name": "Maria Silva",
+      "phoneNumber": "11999999999"
+    }
+  ],
+  "totalElements": 2,
+  "totalPages": 1
+}

@@ -1,0 +1,4 @@
+{
+  "message": "category is required, product is required",
+  "status": 400
+}

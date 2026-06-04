@@ -1,0 +1,4 @@
+{
+  "message": "Customer with name 'José Santos' already exists",
+  "status": 409
+}

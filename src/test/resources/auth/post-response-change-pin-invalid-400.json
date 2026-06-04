@@ -1,0 +1,4 @@
+{
+  "message": "Current pin must be 1 to 4 digits, New pin must be 1 to 4 digits",
+  "status": 400
+}
