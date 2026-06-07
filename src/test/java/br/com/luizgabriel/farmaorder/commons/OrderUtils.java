@@ -21,7 +21,7 @@ public class OrderUtils {
         return OrderItem.builder()
                 .id(id)
                 .product("Dipirona 500mg")
-                .category(Category.GENERICO)
+                .category(Category.MEDICAMENTOS)
                 .quantity(1)
                 .status(status)
                 .build();
@@ -82,11 +82,11 @@ public class OrderUtils {
     }
 
     public OrderItemPostRequest newOrderItemPostRequest() {
-        return new OrderItemPostRequest("Dipirona 500mg", Category.GENERICO, 1);
+        return new OrderItemPostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 1);
     }
 
     public OrderItemPutRequest newOrderItemPutRequest() {
-        return new OrderItemPutRequest("Paracetamol 750mg", Category.ETICO, 2);
+        return new OrderItemPutRequest("Paracetamol 750mg", Category.PERFUMARIA, 2);
     }
 
     public OrderPutRequest newOrderPutRequest() {

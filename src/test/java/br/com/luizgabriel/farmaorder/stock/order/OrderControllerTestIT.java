@@ -108,7 +108,7 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     @DisplayName("POST /orders should return 404 when customer is not found")
     void save_ReturnsNotFound_WhenCustomerNotFound() {
         var expected = fileUtils.readResourceFile("order/post-response-order-customer-not-found-404.json");
-        var request = "{\"customerId\": \"" + NONEXISTENT_ID + "\", \"items\": [{\"product\": \"Dipirona\", \"category\": \"ETICO\"}]}";
+        var request = "{\"customerId\": \"" + NONEXISTENT_ID + "\", \"items\": [{\"product\": \"Dipirona\", \\\"category\\\": \\\"MEDICAMENTOS\\\"}]}";
 
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)

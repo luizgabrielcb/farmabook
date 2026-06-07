@@ -16,7 +16,7 @@ public class ShortageUtils {
         return Shortage.builder()
                 .id(SHORTAGE_ID)
                 .product("Dipirona 500mg")
-                .category(Category.GENERICO)
+                .category(Category.MEDICAMENTOS)
                 .quantity(10)
                 .status(ShortageStatus.PENDING)
                 .createdById(UserUtils.USER_ID)
@@ -28,7 +28,7 @@ public class ShortageUtils {
         return Shortage.builder()
                 .id(SHORTAGE_ID)
                 .product("Dipirona 500mg")
-                .category(Category.GENERICO)
+                .category(Category.MEDICAMENTOS)
                 .quantity(10)
                 .status(ShortageStatus.ORDERED)
                 .createdById(UserUtils.USER_ID)
@@ -40,11 +40,11 @@ public class ShortageUtils {
     }
 
     public ShortagePostRequest newShortagePostRequest() {
-        return new ShortagePostRequest("Dipirona 500mg", Category.GENERICO, 10);
+        return new ShortagePostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 10);
     }
 
     public ShortagePutRequest newShortagePutRequest() {
-        return new ShortagePutRequest("Paracetamol 750mg", Category.ETICO, 5);
+        return new ShortagePutRequest("Paracetamol 750mg", Category.PERFUMARIA, 5);
     }
 
     public ShortagePostResponse newShortagePostResponse(Shortage shortage) {
