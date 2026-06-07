@@ -174,7 +174,7 @@ class ShortageControllerTestIT extends IntegrationTestConfig {
 
         var updated = shortageRepository.findById(UUID.fromString("00000000-0000-0000-0000-000000000001")).orElseThrow();
         assertThat(updated.getProduct()).isEqualTo("Dipirona 1g");
-        assertThat(updated.getCategory()).isEqualTo(br.com.luizgabriel.farmaorder.stock.Category.GENERICO);
+        assertThat(updated.getCategory()).isEqualTo(br.com.luizgabriel.farmaorder.stock.Category.PERFUMARIA);
         assertThat(updated.getQuantity()).isEqualTo(3);
     }
 

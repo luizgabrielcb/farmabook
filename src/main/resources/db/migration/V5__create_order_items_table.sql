@@ -32,8 +32,8 @@ CREATE TABLE order_items
         CHECK (status IN ('PENDING', 'ORDERED', 'RECEIVED', 'DELIVERED')),
 
     CONSTRAINT chk_order_items_category
-        CHECK (category IN ('ETICO', 'GENERICO', 'SIMILAR', 'PERFUMARIA',
-                            'SUPLEMENTO', 'LIBERADO', 'OUTROS')),
+        CHECK (category IN ('MEDICAMENTOS', 'PERFUMARIA', 'SUPLEMENTOS',
+                            'PRODUTOS_NATURAIS', 'OUTROS')),
 
     CONSTRAINT chk_order_items_quantity_positive
         CHECK (quantity IS NULL OR quantity > 0),

@@ -19,7 +19,7 @@ INSERT INTO order_items (id, order_id, product, category, quantity, status, crea
 VALUES ('00000000-0000-0000-0000-000000000011',
         '00000000-0000-0000-0000-000000000010',
         'Dipirona 500mg',
-        'ETICO',
+        'MEDICAMENTOS',
         5,
         'PENDING',
         NOW(),

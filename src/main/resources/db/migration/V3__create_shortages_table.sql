@@ -21,8 +21,8 @@ CREATE TABLE shortages
         CHECK (status IN ('PENDING', 'ORDERED')),
 
     CONSTRAINT chk_shortages_category
-        CHECK (category IN ('ETICO', 'GENERICO', 'SIMILAR', 'PERFUMARIA',
-                            'SUPLEMENTO', 'LIBERADO', 'OUTROS')),
+        CHECK (category IN ('MEDICAMENTOS', 'PERFUMARIA', 'SUPLEMENTOS',
+                            'PRODUTOS_NATURAIS', 'OUTROS')),
 
     CONSTRAINT chk_shortages_quantity_positive
         CHECK (quantity IS NULL OR quantity > 0),
