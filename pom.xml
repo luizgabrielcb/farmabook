@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>br.com.luizgabriel</groupId>
-    <artifactId>farmaorder</artifactId>
+    <artifactId>farmabook</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
