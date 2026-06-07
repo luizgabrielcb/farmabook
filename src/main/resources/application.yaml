@@ -1,11 +1,11 @@
 spring:
   application:
-    name: farmaorder
+    name: farmabook
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/farmaorder_db
-    username: farmaorder_user
-    password: farmaorder_pass
+    url: jdbc:postgresql://localhost:5432/farmabook
+    username: farmabook_user
+    password: farmabook_pass
 
   jpa:
     hibernate:
