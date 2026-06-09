@@ -6,6 +6,7 @@ import java.util.UUID;
 public record NotificationGetResponse(
         UUID id,
         UUID orderId,
+        UUID compoundingId,
         UUID customerId,
         String customerPhone,
         String customerName,

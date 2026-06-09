@@ -78,7 +78,7 @@ class ShortageControllerTestIT extends IntegrationTestConfig {
     @DisplayName("POST /shortages should return 400 when required fields are invalid")
     void save_ReturnsBadRequest_WhenFieldsAreInvalid() {
         var request = fileUtils.readResourceFile("shortage/post-request-shortage-invalid-fields.json");
-        var expected = fileUtils.readResourceFile("shortage/post-response-shortage-invalid-fields-400.json");
+        var expected = fileUtils.readResourceFile("shortage/post-response-shortage-save-invalid-fields-400.json");
 
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)

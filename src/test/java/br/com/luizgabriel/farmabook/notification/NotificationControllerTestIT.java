@@ -44,8 +44,8 @@ class NotificationControllerTestIT extends IntegrationTestConfig {
                 .extract().body().asString();
 
         JsonAssertions.assertThatJson(body)
-                .whenIgnoringPaths("content[*].id", "content[*].orderId", "content[*].customerId",
-                        "content[*].message", "content[*].link", "content[*].sentAt",
+                .whenIgnoringPaths("content[*].id", "content[*].orderId", "content[*].compoundingId",
+                        "content[*].customerId", "content[*].message", "content[*].link", "content[*].sentAt",
                         "pageable", "last", "first", "size", "number", "sort", "numberOfElements", "empty")
                 .isEqualTo(expected);
     }

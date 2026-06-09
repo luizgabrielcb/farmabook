@@ -258,9 +258,8 @@ public class OrderService {
 
 
         if (transitionedToReceived) {
-            var notification = notificationService.generateForOrderReceived(order);
-
-            order.setNotifiedAt(notification.sentAt());
+            notificationService.generateForOrderReceived(order)
+                    .ifPresent(notification -> order.setNotifiedAt(notification.sentAt()));
         }
     }
 

@@ -1,0 +1,15 @@
+{
+  "content": [
+    {
+      "quantity": 2,
+      "customerName": "Maria Silva",
+      "pharmacyName": "Farmácia Magistral Central",
+      "pharmacyCity": "São Paulo",
+      "status": "PENDING",
+      "paymentStatus": "TO_PAY",
+      "createdByName": "User Teste"
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1
+}

@@ -482,7 +482,7 @@ class OrderServiceTest {
         var notification = utils.newNotificationGetResponse();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
-        BDDMockito.when(notificationService.generateForOrderReceived(order)).thenReturn(notification);
+        BDDMockito.when(notificationService.generateForOrderReceived(order)).thenReturn(Optional.of(notification));
 
         service.markItemAsReceived(order.getId(), item.getId(), actor);
 
@@ -642,7 +642,7 @@ class OrderServiceTest {
         var notification = utils.newNotificationGetResponse();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
-        BDDMockito.when(notificationService.generateForOrderReceived(order)).thenReturn(notification);
+        BDDMockito.when(notificationService.generateForOrderReceived(order)).thenReturn(Optional.of(notification));
 
         service.markAllAsReceived(order.getId(), actor);
 

@@ -8,6 +8,7 @@ import org.mapstruct.Mapping;
 public interface NotificationMapper {
 
     @Mapping(source = "order.id", target = "orderId")
+    @Mapping(source = "compounding.id", target = "compoundingId")
     @Mapping(source = "customer.id", target = "customerId")
     NotificationGetResponse toNotificationGetResponse(Notification notification);
 }

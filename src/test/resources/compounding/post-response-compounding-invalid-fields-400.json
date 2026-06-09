@@ -1,0 +1,4 @@
+{
+  "message": "customerId is required, pharmacyId is required, quantity is required",
+  "status": 400
+}

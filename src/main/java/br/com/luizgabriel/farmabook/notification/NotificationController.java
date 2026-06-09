@@ -25,6 +25,13 @@ public class NotificationController {
         return ResponseEntity.ok(notificationGetResponsePage);
     }
 
+    @GetMapping("/notifications/compoundings/{compoundingId}")
+    public ResponseEntity<Page<NotificationGetResponse>> findAllByCompoundingId(@PathVariable UUID compoundingId, Pageable pageable) {
+        var notificationGetResponsePage = service.findAllByCompoundingId(compoundingId, pageable);
+
+        return ResponseEntity.ok(notificationGetResponsePage);
+    }
+
     @PostMapping("/notifications/{id}/resend")
     public ResponseEntity<NotificationGetResponse> resend(@PathVariable UUID id) {
         var notificationGetResponse = service.resend(id);
