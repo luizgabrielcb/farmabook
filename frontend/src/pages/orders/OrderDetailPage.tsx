@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  getOrder, deleteOrder,
+  getOrder, deleteOrder, updateOrder,
   markOrderAsOrdered, markOrderAsReceived, markOrderAsDelivered,
   deleteOrderItem, markItemAsOrdered, markItemAsReceived, markItemAsDelivered,
   markItemPaymentAsPaid, markItemPaymentAsMakeNote, markItemPaymentAsNoted, markItemPaymentAsToPay,
@@ -18,17 +18,18 @@ import { CategoryBadge, CATEGORY_OPTIONS } from '@/components/shared/CategoryBad
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { NotificationPopup } from '@/components/shared/NotificationPopup'
 import { DistributorSearch } from '@/components/shared/DistributorSearch'
+import { PriceInput, parsePriceInput } from '@/components/shared/PriceInput'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
 import { formatDate } from '@/lib/utils'
-import { ArrowLeft, Plus, Trash2, Pencil, MessageCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Pencil, MessageCircle, Settings2 } from 'lucide-react'
 import type { Category, Distributor, OrderItem, Notification } from '@/types'
 
-interface ItemForm { product: string; category: Category; quantity: string }
-const emptyItemForm: ItemForm = { product: '', category: 'MEDICAMENTOS', quantity: '' }
+interface ItemForm { product: string; category: Category; quantity: string; price: string }
+const emptyItemForm: ItemForm = { product: '', category: 'MEDICAMENTOS', quantity: '', price: '' }
 
 type DistributorPickerState = null | 'bulk' | { itemId: string }
 
@@ -45,6 +46,9 @@ export function OrderDetailPage() {
   const [popup, setPopup] = useState<Notification | null>(null)
   const [distributorPicker, setDistributorPicker] = useState<DistributorPickerState>(null)
   const [pickedDistributor, setPickedDistributor] = useState<Distributor | null>(null)
+  const [editOrderOpen, setEditOrderOpen] = useState(false)
+  const [editObservations, setEditObservations] = useState('')
+  const [editTotalPrice, setEditTotalPrice] = useState('')
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: ['order', id],
@@ -67,6 +71,22 @@ export function OrderDetailPage() {
     mutationFn: () => deleteOrder(id!),
     onSuccess: () => navigate('/orders'),
   })
+
+  const updateOrderMutation = useMutation({
+    mutationFn: () => updateOrder(id!, {
+      customerId: order!.customerId,
+      observations: editObservations.trim() || null,
+      totalPrice: parsePriceInput(editTotalPrice),
+    }),
+    onSuccess: () => { setEditOrderOpen(false); invalidate() },
+  })
+
+  function openEditOrder() {
+    setEditObservations(order?.observations ?? '')
+    setEditTotalPrice(order?.totalPrice != null ? String(order.totalPrice).replace('.', ',') : '')
+    updateOrderMutation.reset()
+    setEditOrderOpen(true)
+  }
 
   const markAllOrdered = useMutation({
     mutationFn: (distributorId: string) => markOrderAsOrdered(id!, distributorId),
@@ -93,6 +113,7 @@ export function OrderDetailPage() {
         product: itemForm.product,
         category: itemForm.category,
         quantity: Number(itemForm.quantity),
+        price: parsePriceInput(itemForm.price),
       }
       return editingItem
         ? updateOrderItem(id!, editingItem.id, body)
@@ -114,6 +135,7 @@ export function OrderDetailPage() {
       product: item.product,
       category: item.category,
       quantity: String(item.quantity ?? ''),
+      price: item.price != null ? String(item.price).replace('.', ',') : '',
     })
     saveItemMutation.reset()
     setItemDialogOpen(true)
@@ -166,6 +188,9 @@ export function OrderDetailPage() {
             </Button>
             {!isDelivered && (
               <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+                <Button variant="secondary" size="sm" onClick={openEditOrder}>
+                  <Settings2 size={13} /> Editar
+                </Button>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -248,7 +273,7 @@ export function OrderDetailPage() {
             <TableHead>
               <tr>
                 <Th>Produto</Th><Th>Categoria</Th><Th>Qtd.</Th><Th>Status</Th>
-                <Th>Distribuidora</Th><Th>Preço</Th><Th>Pagamento</Th>
+                <Th>Distribuidora</Th><Th>Preço un.</Th><Th>Pagamento</Th>
                 <Th>Pedido por</Th><Th>Recebido por</Th><Th />
               </tr>
             </TableHead>
@@ -258,7 +283,9 @@ export function OrderDetailPage() {
               )}
               {order.items.map((item) => (
                 <Tr key={item.id}>
-                  <Td className="font-medium text-gray-900">{item.product}</Td>
+                  <Td className="max-w-[200px]">
+                    <span className="font-medium text-gray-900 block truncate" title={item.product}>{item.product}</span>
+                  </Td>
                   <Td><CategoryBadge category={item.category} /></Td>
                   <Td>{item.quantity}</Td>
                   <Td><OrderStatusBadge status={item.status} /></Td>
@@ -306,6 +333,7 @@ export function OrderDetailPage() {
               required
               autoFocus
               autoComplete="off"
+              maxLength={150}
             />
           </div>
           <div>
@@ -324,9 +352,21 @@ export function OrderDetailPage() {
             <Input
               type="number"
               min={1}
+              max={1000}
+              step={1}
               value={itemForm.quantity}
+              onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
               onChange={(e) => setItemForm((p) => ({ ...p, quantity: e.target.value }))}
               required
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">
+              Preço unitário <span className="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <PriceInput
+              value={itemForm.price}
+              onChange={(v) => setItemForm((p) => ({ ...p, price: v }))}
             />
           </div>
           {saveItemMutation.isError && <ErrorMessage error={saveItemMutation.error} />}
@@ -392,6 +432,52 @@ export function OrderDetailPage() {
         </div>
       </Dialog>
 
+      {/* Edit order dialog */}
+      <Dialog
+        open={editOrderOpen}
+        onOpenChange={(v) => !v && setEditOrderOpen(false)}
+        title="Editar encomenda"
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            const hasItemPrices = order?.items.some((i) => i.price != null) ?? false
+            const settingManualTotal = parsePriceInput(editTotalPrice) != null
+            if (settingManualTotal && hasItemPrices) {
+              if (!await confirm('Os preços dos itens serão removidos para usar o preço total manual. Deseja continuar?')) return
+            }
+            withPin(() => updateOrderMutation.mutate())
+          }}
+          className="space-y-3"
+        >
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">
+              Observações <span className="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <Input
+              value={editObservations}
+              onChange={(e) => setEditObservations(e.target.value)}
+              placeholder="Observações sobre a encomenda..."
+              maxLength={500}
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">
+              Preço total <span className="text-gray-400 font-normal">(opcional — usado quando não há preço por item)</span>
+            </label>
+            <PriceInput value={editTotalPrice} onChange={setEditTotalPrice} />
+          </div>
+          {updateOrderMutation.isError && <ErrorMessage error={updateOrderMutation.error} />}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setEditOrderOpen(false)}>Cancelar</Button>
+            <Button type="submit" variant="primary" disabled={updateOrderMutation.isPending}>
+              {updateOrderMutation.isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
       {popup && <NotificationPopup notification={popup} onClose={() => setPopup(null)} />}
     </div>
   )
@@ -452,102 +538,62 @@ function ItemActions({
 
   return (
     <div className="flex items-center gap-1 flex-wrap justify-end">
-      {/* Status transitions */}
+      {/* Status group */}
       {item.status === 'PENDING' && (
         <Button variant="ghost" size="sm" onClick={onMarkOrdered}>
           Marcar pedido
         </Button>
       )}
       {item.status === 'ORDERED' && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => withPin(() => advanceMutation.mutate())}
-          disabled={advanceMutation.isPending}
-        >
+        <Button variant="ghost" size="sm" onClick={() => withPin(() => advanceMutation.mutate())} disabled={advanceMutation.isPending}>
           Marcar recebido
         </Button>
       )}
       {item.status === 'RECEIVED' && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => withPin(() => advanceMutation.mutate())}
-          disabled={advanceMutation.isPending}
-        >
+        <Button variant="ghost" size="sm" onClick={() => withPin(() => advanceMutation.mutate())} disabled={advanceMutation.isPending}>
           Marcar entregue
         </Button>
       )}
 
-      {/* Payment transitions */}
+      {/* Payment group — separated by divider */}
       {!isPaymentFinal && (
-        <>
+        <div className={`flex items-center gap-1 ${item.status !== 'DELIVERED' ? 'border-l border-gray-200 pl-2 ml-1' : ''}`}>
           {item.paymentStatus === 'TO_PAY' && (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => withPin(() => payPaidMutation.mutate())}
-                disabled={payPaidMutation.isPending}
-              >
+              <Button variant="ghost" size="sm" onClick={() => withPin(() => payPaidMutation.mutate())} disabled={payPaidMutation.isPending}>
                 Pago
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => withPin(() => payMakeNoteMutation.mutate())}
-                disabled={payMakeNoteMutation.isPending}
-              >
-                Nota
+              <Button variant="ghost" size="sm" onClick={() => withPin(() => payMakeNoteMutation.mutate())} disabled={payMakeNoteMutation.isPending}>
+                Fazer nota
               </Button>
             </>
           )}
           {item.paymentStatus === 'MAKE_NOTE' && (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => withPin(() => payToPayMutation.mutate())}
-                disabled={payToPayMutation.isPending}
-              >
+              <Button variant="ghost" size="sm" onClick={() => withPin(() => payToPayMutation.mutate())} disabled={payToPayMutation.isPending}>
                 A pagar
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => withPin(() => payPaidMutation.mutate())}
-                disabled={payPaidMutation.isPending}
-              >
+              <Button variant="ghost" size="sm" onClick={() => withPin(() => payPaidMutation.mutate())} disabled={payPaidMutation.isPending}>
                 Pago
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => withPin(() => payNotedMutation.mutate())}
-                disabled={payNotedMutation.isPending}
-              >
+              <Button variant="ghost" size="sm" onClick={() => withPin(() => payNotedMutation.mutate())} disabled={payNotedMutation.isPending}>
                 Anotado
               </Button>
             </>
           )}
-        </>
+        </div>
       )}
 
+      {/* Edit/delete group — separated by divider */}
       {item.status !== 'DELIVERED' && (
-        <>
+        <div className="flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
           <Button variant="ghost" size="sm" onClick={onEdit}>
             <Pencil size={12} />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            className="text-red-400 hover:text-red-600"
-          >
+          <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleteMutation.isPending} className="text-red-400 hover:text-red-600">
             <Trash2 size={12} />
           </Button>
-        </>
+        </div>
       )}
     </div>
   )

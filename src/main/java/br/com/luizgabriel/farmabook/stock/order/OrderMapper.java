@@ -20,6 +20,7 @@ public interface OrderMapper {
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByName", source = "createdBy.name")
     @Mapping(target = "observations", source = "request.observations")
+    @Mapping(target = "totalPrice", source = "request.totalPrice")
     @Mapping(target = "items", ignore = true)
     Order toOrder(OrderPostRequest request, Customer customer, User createdBy);
 
@@ -31,12 +32,14 @@ public interface OrderMapper {
     OrderGetResponse toOrderGetResponse(Order order);
 
     default BigDecimal computeTotalPrice(Order order) {
-        if (order.getItems() == null) return null;
-        var total = order.getItems().stream()
-                .filter(i -> i.getPrice() != null)
-                .map(OrderItem::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return total.compareTo(BigDecimal.ZERO) == 0 ? null : total;
+        if (order.getItems() != null) {
+            var total = order.getItems().stream()
+                    .filter(i -> i.getPrice() != null)
+                    .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            if (total.compareTo(BigDecimal.ZERO) > 0) return total;
+        }
+        return order.getTotalPrice();
     }
 
     @Mapping(target = "id", ignore = true)
@@ -45,7 +48,6 @@ public interface OrderMapper {
     @Mapping(target = "paymentStatus", constant = "TO_PAY")
     @Mapping(target = "distributorId", ignore = true)
     @Mapping(target = "distributorName", ignore = true)
-    @Mapping(target = "price", ignore = true)
     @Mapping(target = "orderedById", ignore = true)
     @Mapping(target = "orderedByName", ignore = true)
     @Mapping(target = "orderedAt", ignore = true)

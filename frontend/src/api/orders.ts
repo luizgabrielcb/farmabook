@@ -6,6 +6,7 @@ interface OrderItemInput {
   product: string
   category: Category
   quantity: number | null
+  price?: number | null
 }
 
 export async function listOrders(page = 0, size = 20): Promise<Page<Order>> {
@@ -24,6 +25,7 @@ export async function createOrder(body: {
   customerId: string
   items: OrderItemInput[]
   observations?: string | null
+  totalPrice?: number | null
 }): Promise<Order> {
   const { data } = await api.post<Order>('/orders', body)
   return data
@@ -31,7 +33,7 @@ export async function createOrder(body: {
 
 export async function updateOrder(
   id: string,
-  body: { customerId: string; observations?: string | null },
+  body: { customerId: string; observations?: string | null; totalPrice?: number | null },
 ): Promise<Order> {
   const { data } = await api.put<Order>(`/orders/${id}`, body)
   return data

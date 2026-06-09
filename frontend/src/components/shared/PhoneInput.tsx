@@ -112,6 +112,7 @@ export function PhoneInput({ value, onChange, className }: PhoneInputProps) {
               ? '(555) 123-4567'
               : '+44 20 1234 5678'
         }
+        maxLength={20}
         className="flex-1"
       />
     </div>

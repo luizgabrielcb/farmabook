@@ -79,19 +79,19 @@ public class OrderUtils {
     }
 
     public OrderPostRequest newOrderPostRequest() {
-        return new OrderPostRequest(CustomerUtils.CUSTOMER_ID, List.of(newOrderItemPostRequest()), null);
+        return new OrderPostRequest(CustomerUtils.CUSTOMER_ID, List.of(newOrderItemPostRequest()), null, null);
     }
 
     public OrderItemPostRequest newOrderItemPostRequest() {
-        return new OrderItemPostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 1);
+        return new OrderItemPostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 1, null);
     }
 
     public OrderItemPutRequest newOrderItemPutRequest() {
-        return new OrderItemPutRequest("Paracetamol 750mg", Category.PERFUMARIA, 2);
+        return new OrderItemPutRequest("Paracetamol 750mg", Category.PERFUMARIA, 2, null);
     }
 
     public OrderPutRequest newOrderPutRequest() {
-        return new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null);
+        return new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null, null);
     }
 
     public OrderPostResponse newOrderPostResponse(Order order) {
