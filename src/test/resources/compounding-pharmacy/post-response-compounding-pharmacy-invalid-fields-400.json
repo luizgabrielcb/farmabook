@@ -1,0 +1,4 @@
+{
+  "message": "city is required, name is required",
+  "status": 400
+}

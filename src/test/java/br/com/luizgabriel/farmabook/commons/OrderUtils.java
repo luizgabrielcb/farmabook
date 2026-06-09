@@ -118,7 +118,7 @@ public class OrderUtils {
     }
 
     public NotificationGetResponse newNotificationGetResponse() {
-        return new NotificationGetResponse(UUID.randomUUID(), ORDER_ID, CustomerUtils.CUSTOMER_ID,
+        return new NotificationGetResponse(UUID.randomUUID(), ORDER_ID, null, CustomerUtils.CUSTOMER_ID,
                 "5511999999999", "Test Customer", "Boa tarde, Test Customer!",
                 "https://wa.me/5511999999999", Instant.now());
     }

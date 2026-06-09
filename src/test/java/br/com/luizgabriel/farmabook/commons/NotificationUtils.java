@@ -63,9 +63,12 @@ public class NotificationUtils {
     }
 
     public NotificationGetResponse newNotificationGetResponse(Notification notification) {
+        var orderId = notification.getOrder() != null ? notification.getOrder().getId() : null;
+        var compoundingId = notification.getCompounding() != null ? notification.getCompounding().getId() : null;
         return new NotificationGetResponse(
                 notification.getId(),
-                notification.getOrder().getId(),
+                orderId,
+                compoundingId,
                 notification.getCustomer().getId(),
                 notification.getCustomerPhone(),
                 notification.getCustomerName(),

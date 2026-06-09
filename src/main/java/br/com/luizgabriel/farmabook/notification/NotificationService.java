@@ -1,5 +1,7 @@
 package br.com.luizgabriel.farmabook.notification;
 
+import br.com.luizgabriel.farmabook.compounding.Compounding;
+import br.com.luizgabriel.farmabook.customer.Customer;
 import br.com.luizgabriel.farmabook.customer.CustomerService;
 import br.com.luizgabriel.farmabook.exception.NotFoundException;
 import br.com.luizgabriel.farmabook.notification.dto.NotificationGetResponse;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -29,9 +32,23 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
 
     @Transactional
-    public NotificationGetResponse generateForOrderReceived(Order order) {
-        Notification saved = persistNotification(order);
-        return notificationMapper.toNotificationGetResponse(saved);
+    public Optional<NotificationGetResponse> generateForOrderReceived(Order order) {
+        var customer = customerService.findByIdOrThrowNotFound(order.getCustomerId());
+        if (customer.getPhoneNumber() == null || customer.getPhoneNumber().isBlank()) {
+            return Optional.empty();
+        }
+        Notification saved = persistNotification(customer, "encomenda", order, null);
+        return Optional.of(notificationMapper.toNotificationGetResponse(saved));
+    }
+
+    @Transactional
+    public Optional<NotificationGetResponse> generateForCompoundingReceived(Compounding compounding) {
+        var customer = customerService.findByIdOrThrowNotFound(compounding.getCustomerId());
+        if (customer.getPhoneNumber() == null || customer.getPhoneNumber().isBlank()) {
+            return Optional.empty();
+        }
+        Notification saved = persistNotification(customer, "manipulação", null, compounding);
+        return Optional.of(notificationMapper.toNotificationGetResponse(saved));
     }
 
     @Transactional(readOnly = true)
@@ -40,26 +57,39 @@ public class NotificationService {
                 .map(notificationMapper::toNotificationGetResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<NotificationGetResponse> findAllByCompoundingId(UUID compoundingId, Pageable pageable) {
+        return notificationRepository.findAllByCompoundingId(compoundingId, pageable)
+                .map(notificationMapper::toNotificationGetResponse);
+    }
+
     @Transactional
     public NotificationGetResponse resend(UUID notificationId) {
         var original = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new NotFoundException("Notification not found"));
 
-        var saved = persistNotification(original.getOrder());
+        Notification saved;
+        if (original.getOrder() != null) {
+            var customer = customerService.findByIdOrThrowNotFound(original.getOrder().getCustomerId());
+            saved = persistNotification(customer, "encomenda", original.getOrder(), null);
+        } else {
+            var customer = customerService.findByIdOrThrowNotFound(original.getCompounding().getCustomerId());
+            saved = persistNotification(customer, "manipulação", null, original.getCompounding());
+        }
 
         return notificationMapper.toNotificationGetResponse(saved);
     }
 
-    private Notification persistNotification(Order order) {
-        var customer = customerService.findByIdOrThrowNotFound(order.getCustomerId());
+    private Notification persistNotification(Customer customer, String itemType, Order order, Compounding compounding) {
 
         var phone = sanitizePhone(customer.getPhoneNumber());
-        var message = buildMessage(customer.getName());
+        var message = buildMessage(customer.getName(), itemType);
         var link = buildWaMeLink(phone, message);
 
         var notification = new Notification();
 
         notification.setOrder(order);
+        notification.setCompounding(compounding);
         notification.setCustomer(customer);
         notification.setCustomerPhone(phone);
         notification.setCustomerName(customer.getName());
@@ -70,11 +100,12 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    private String buildMessage(String fullName) {
+    private String buildMessage(String fullName, String itemType) {
         return String.format(
-                "%s, %s! Tudo bem? A sua encomenda acabou de chegar aqui na farmácia.",
+                "%s, %s! Tudo bem? A sua %s acabou de chegar aqui na farmácia.",
                 resolveGreeting(),
-                shortenName(fullName)
+                shortenName(fullName),
+                itemType
         );
     }
 

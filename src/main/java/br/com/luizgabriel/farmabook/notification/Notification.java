@@ -1,5 +1,6 @@
 package br.com.luizgabriel.farmabook.notification;
 
+import br.com.luizgabriel.farmabook.compounding.Compounding;
 import br.com.luizgabriel.farmabook.customer.Customer;
 import br.com.luizgabriel.farmabook.shared.Auditable;
 import br.com.luizgabriel.farmabook.stock.order.Order;
@@ -27,9 +28,13 @@ public class Notification extends Auditable {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "order_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "order_id", nullable = true)
     private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "compounding_id", nullable = true)
+    private Compounding compounding;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)

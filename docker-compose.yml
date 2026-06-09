@@ -10,6 +10,36 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ENV_POSTGRES_USER:-farmabook_user} -d ${ENV_POSTGRES_DB:-farmabook}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: farmabook-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${ENV_POSTGRES_DB:-farmabook}
+      SPRING_DATASOURCE_USERNAME: ${ENV_POSTGRES_USER:-farmabook_user}
+      SPRING_DATASOURCE_PASSWORD: ${ENV_POSTGRES_PASSWORD:-farmabook_pass}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: farmabook-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

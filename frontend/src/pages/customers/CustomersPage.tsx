@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Search, History } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, History, X } from 'lucide-react'
 import { listCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/api/customers'
 import { listOrders } from '@/api/orders'
+import { listCompoundings } from '@/api/compoundings'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,15 +14,17 @@ import { Pagination } from '@/components/shared/Pagination'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { Dialog } from '@/components/ui/dialog'
 import { PhoneInput } from '@/components/shared/PhoneInput'
-import { OrderStatusBadge } from '@/components/shared/StatusBadge'
+import { OrderStatusBadge, CompoundingStatusBadge } from '@/components/shared/StatusBadge'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
-import { formatDateShort, formatDate } from '@/lib/utils'
+import { formatDateShort, formatDate, parseLocalDate } from '@/lib/utils'
 import type { Customer } from '@/types'
 
 interface FormState { name: string; phoneNumber: string }
 const emptyForm: FormState = { name: '', phoneNumber: '' }
 const PAGE_SIZE = 20
+const HISTORY_PAGE_SIZE = 10
+type HistoryTab = 'orders' | 'compoundings'
 
 export function CustomersPage() {
   const navigate = useNavigate()
@@ -29,8 +32,10 @@ export function CustomersPage() {
   const [page, setPage] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [historyCustomer, setHistoryCustomer] = useState<Customer | null>(null)
+  const [historyTab, setHistoryTab] = useState<HistoryTab>('orders')
   const [historyPage, setHistoryPage] = useState(0)
-  const HISTORY_PAGE_SIZE = 10
+  const [historyDateFrom, setHistoryDateFrom] = useState('')
+  const [historyDateTo, setHistoryDateTo] = useState('')
   const [editing, setEditing] = useState<Customer | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const withPin = useWithPin()
@@ -48,6 +53,12 @@ export function CustomersPage() {
     enabled: !!historyCustomer,
   })
 
+  const { data: compoundingsData } = useQuery({
+    queryKey: ['compoundings-all'],
+    queryFn: () => listCompoundings(0, 500),
+    enabled: !!historyCustomer,
+  })
+
   const customerOrders = useMemo(() => {
     if (!historyCustomer || !ordersData) return []
     return [...ordersData.content]
@@ -55,8 +66,29 @@ export function CustomersPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [ordersData, historyCustomer])
 
-  const historyTotalPages = Math.ceil(customerOrders.length / HISTORY_PAGE_SIZE)
-  const pagedHistory = customerOrders.slice(historyPage * HISTORY_PAGE_SIZE, (historyPage + 1) * HISTORY_PAGE_SIZE)
+  const customerCompoundings = useMemo(() => {
+    if (!historyCustomer || !compoundingsData) return []
+    return [...compoundingsData.content]
+      .filter((c) => c.customerId === historyCustomer.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [compoundingsData, historyCustomer])
+
+  const historyFiltered = useMemo(() => {
+    let items = (historyTab === 'orders' ? customerOrders : customerCompoundings) as { id: string; createdAt: string; createdByName: string; status: string }[]
+    if (historyDateFrom) {
+      const from = parseLocalDate(historyDateFrom)
+      items = items.filter((i) => new Date(i.createdAt) >= from)
+    }
+    if (historyDateTo) {
+      const to = parseLocalDate(historyDateTo)
+      to.setHours(23, 59, 59, 999)
+      items = items.filter((i) => new Date(i.createdAt) <= to)
+    }
+    return items
+  }, [historyTab, customerOrders, customerCompoundings, historyDateFrom, historyDateTo])
+
+  const historyTotalPages = Math.ceil(historyFiltered.length / HISTORY_PAGE_SIZE)
+  const pagedHistory = historyFiltered.slice(historyPage * HISTORY_PAGE_SIZE, (historyPage + 1) * HISTORY_PAGE_SIZE)
 
   const filtered = useMemo(() => {
     const items = data?.content ?? []
@@ -80,7 +112,13 @@ export function CustomersPage() {
 
   const deleteMutation = useMutation({ mutationFn: deleteCustomer, onSuccess: invalidate })
 
-  function openHistory(c: Customer) { setHistoryCustomer(c); setHistoryPage(0) }
+  function openHistory(c: Customer) {
+    setHistoryCustomer(c)
+    setHistoryTab('orders')
+    setHistoryPage(0)
+    setHistoryDateFrom('')
+    setHistoryDateTo('')
+  }
 
   function openCreate() { setEditing(null); setForm(emptyForm); saveMutation.reset(); setDialogOpen(true) }
   function openEdit(c: Customer) {
@@ -193,70 +231,148 @@ export function CustomersPage() {
         </form>
       </Dialog>
 
-      {/* Dialog: histórico de encomendas */}
+      {/* Dialog: histórico do cliente */}
       <Dialog
         open={!!historyCustomer}
         onOpenChange={(v) => !v && setHistoryCustomer(null)}
-        title={`Encomendas — ${historyCustomer?.name ?? ''}`}
+        title={`Histórico — ${historyCustomer?.name ?? ''}`}
         className="max-w-2xl"
       >
-        {customerOrders.length === 0 ? (
-          <p className="text-sm text-gray-400 py-4 text-center">
-            {ordersData ? 'Nenhuma encomenda registrada para este cliente.' : 'Carregando...'}
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-gray-200">
+          {([
+            { key: 'orders', label: 'Encomendas', count: customerOrders.length },
+            { key: 'compoundings', label: 'Manipulações', count: customerCompoundings.length },
+          ] as { key: HistoryTab; label: string; count: number }[]).map((t) => (
+            <button key={t.key}
+              onClick={() => { setHistoryTab(t.key); setHistoryPage(0) }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer -mb-px ${
+                historyTab === t.key
+                  ? 'border-gray-900 text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}>
+              {t.label}
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                historyTab === t.key ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>{t.count}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Date filters */}
+        <div className="flex items-center gap-2 py-3 border-b border-gray-100">
+          <span className="text-xs text-gray-500 shrink-0">Período:</span>
+          <Input type="date" value={historyDateFrom}
+            onChange={(e) => { setHistoryDateFrom(e.target.value); setHistoryPage(0) }}
+            className="w-36 text-xs" />
+          <span className="text-xs text-gray-400">até</span>
+          <Input type="date" value={historyDateTo}
+            onChange={(e) => { setHistoryDateTo(e.target.value); setHistoryPage(0) }}
+            className="w-36 text-xs" />
+          {(historyDateFrom || historyDateTo) && (
+            <button onClick={() => { setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryPage(0) }}
+              className="text-gray-400 hover:text-gray-600 cursor-pointer">
+              <X size={13} />
+            </button>
+          )}
+          {(historyDateFrom || historyDateTo) && (
+            <span className="text-xs text-gray-400 ml-auto">
+              {historyFiltered.length} de {(historyTab === 'orders' ? customerOrders : customerCompoundings).length} registro(s)
+            </span>
+          )}
+        </div>
+
+        {/* Table */}
+        {pagedHistory.length === 0 ? (
+          <p className="text-sm text-gray-400 py-6 text-center">
+            {(historyTab === 'orders' ? ordersData : compoundingsData)
+              ? (historyDateFrom || historyDateTo)
+                ? 'Nenhum registro encontrado neste período.'
+                : `Nenhuma ${historyTab === 'orders' ? 'encomenda' : 'manipulação'} registrada para este cliente.`
+              : 'Carregando...'}
           </p>
         ) : (
-          <>
-            <div className="overflow-hidden rounded border border-gray-200">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Itens</th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Criado por</th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Data</th>
-                    <th />
+          <div className="overflow-hidden rounded border border-gray-200 mt-3">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
+                  {historyTab === 'orders'
+                    ? <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Itens</th>
+                    : <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Farmácia</th>
+                  }
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Criado por</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Data</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pagedHistory.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2">
+                      {historyTab === 'orders'
+                        ? <OrderStatusBadge status={(item as { status: string }).status as Parameters<typeof OrderStatusBadge>[0]['status']} />
+                        : <CompoundingStatusBadge status={(item as { status: string }).status as Parameters<typeof CompoundingStatusBadge>[0]['status']} />
+                      }
+                    </td>
+                    <td className="px-3 py-2 text-gray-600">
+                      {historyTab === 'orders'
+                        ? `${(item as unknown as { items?: unknown[] }).items?.length ?? 0} item(s)`
+                        : (item as unknown as { pharmacyName: string }).pharmacyName
+                      }
+                    </td>
+                    <td className="px-3 py-2 text-gray-500">{item.createdByName}</td>
+                    <td className="px-3 py-2 text-gray-500">{formatDate(item.createdAt)}</td>
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => {
+                          setHistoryCustomer(null)
+                          navigate(historyTab === 'orders' ? `/orders/${item.id}` : `/compoundings/${item.id}`)
+                        }}
+                        className="text-xs text-blue-600 hover:underline cursor-pointer"
+                      >
+                        Ver
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {pagedHistory.map((o) => (
-                    <tr key={o.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2"><OrderStatusBadge status={o.status} /></td>
-                      <td className="px-3 py-2 text-gray-600">{o.items?.length ?? 0} item(s)</td>
-                      <td className="px-3 py-2 text-gray-500">{o.createdByName}</td>
-                      <td className="px-3 py-2 text-gray-500">{formatDate(o.createdAt)}</td>
-                      <td className="px-3 py-2">
-                        <button
-                          onClick={() => { setHistoryCustomer(null); navigate(`/orders/${o.id}`) }}
-                          className="text-xs text-blue-600 hover:underline cursor-pointer"
-                        >
-                          Ver
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {historyTotalPages > 1 && (
-              <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-                <span>{customerOrders.length} encomenda(s)</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-                    disabled={historyPage === 0}
-                    className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed"
-                  >‹</button>
-                  <span>{historyPage + 1} / {historyTotalPages}</span>
-                  <button
-                    onClick={() => setHistoryPage((p) => Math.min(historyTotalPages - 1, p + 1))}
-                    disabled={historyPage >= historyTotalPages - 1}
-                    className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed"
-                  >›</button>
-                </div>
-              </div>
-            )}
-          </>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
+
+        {/* Pagination */}
+        {historyTotalPages > 1 && (
+          <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+            <span>
+              {historyPage * HISTORY_PAGE_SIZE + 1}–{Math.min((historyPage + 1) * HISTORY_PAGE_SIZE, historyFiltered.length)} de {historyFiltered.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setHistoryPage(0)}
+                disabled={historyPage === 0}
+                className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed"
+              >«</button>
+              <button
+                onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+                disabled={historyPage === 0}
+                className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed"
+              >‹</button>
+              <span className="px-2">página {historyPage + 1} de {historyTotalPages}</span>
+              <button
+                onClick={() => setHistoryPage((p) => Math.min(historyTotalPages - 1, p + 1))}
+                disabled={historyPage >= historyTotalPages - 1}
+                className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed"
+              >›</button>
+              <button
+                onClick={() => setHistoryPage(historyTotalPages - 1)}
+                disabled={historyPage >= historyTotalPages - 1}
+                className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed"
+              >»</button>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-end mt-4">
           <Button variant="secondary" onClick={() => setHistoryCustomer(null)}>Fechar</Button>
         </div>

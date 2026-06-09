@@ -56,7 +56,7 @@ class NotificationServiceTest {
 
         var result = service.generateForOrderReceived(order);
 
-        assertThat(result).isEqualTo(response);
+        assertThat(result).contains(response);
         BDDMockito.then(notificationRepository).should().save(ArgumentMatchers.any(Notification.class));
     }
 
@@ -66,9 +66,11 @@ class NotificationServiceTest {
         var order = utils.newOrder();
         var customer = utils.newCustomerWithLocalPhone(); // "(11) 99999-9999"
 
+        var saved = utils.newNotification(order, customer);
+
         BDDMockito.when(customerService.findByIdOrThrowNotFound(order.getCustomerId())).thenReturn(customer);
-        BDDMockito.when(notificationRepository.save(ArgumentMatchers.any(Notification.class)))
-                .thenReturn(utils.newNotification(order, customer));
+        BDDMockito.when(notificationRepository.save(ArgumentMatchers.any(Notification.class))).thenReturn(saved);
+        BDDMockito.when(notificationMapper.toNotificationGetResponse(saved)).thenReturn(utils.newNotificationGetResponse(saved));
 
         service.generateForOrderReceived(order);
 
@@ -83,9 +85,11 @@ class NotificationServiceTest {
         var order = utils.newOrder();
         var customer = utils.newCustomerWithSingleName(); // "Joao"
 
+        var saved = utils.newNotification(order, customer);
+
         BDDMockito.when(customerService.findByIdOrThrowNotFound(order.getCustomerId())).thenReturn(customer);
-        BDDMockito.when(notificationRepository.save(ArgumentMatchers.any(Notification.class)))
-                .thenReturn(utils.newNotification(order, customer));
+        BDDMockito.when(notificationRepository.save(ArgumentMatchers.any(Notification.class))).thenReturn(saved);
+        BDDMockito.when(notificationMapper.toNotificationGetResponse(saved)).thenReturn(utils.newNotificationGetResponse(saved));
 
         service.generateForOrderReceived(order);
 

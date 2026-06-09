@@ -2,19 +2,18 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { validatePin } from '@/api/auth'
-import { useAuth } from '@/context/AuthContext'
+import { setActivePin } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 
 export function LoginPage() {
   const [pin, setPin] = useState('')
-  const { login } = useAuth()
   const navigate = useNavigate()
 
   const mutation = useMutation({
     mutationFn: () => validatePin(pin),
-    onSuccess: (user) => {
-      login(user, pin)
+    onSuccess: () => {
+      setActivePin(pin)
       navigate('/orders')
     },
   })
