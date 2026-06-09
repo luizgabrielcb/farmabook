@@ -10,12 +10,13 @@ import { Select } from '@/components/ui/select'
 import { CustomerSearch } from '@/components/shared/CustomerSearch'
 import { PhoneInput } from '@/components/shared/PhoneInput'
 import { CATEGORY_OPTIONS } from '@/components/shared/CategoryBadge'
+import { PriceInput, parsePriceInput } from '@/components/shared/PriceInput'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { useWithPin } from '@/context/PinContext'
 import type { Customer, Category } from '@/types'
 
-interface ItemForm { product: string; category: Category; quantity: string }
-const emptyItem = (): ItemForm => ({ product: '', category: 'MEDICAMENTOS', quantity: '' })
+interface ItemForm { product: string; category: Category; quantity: string; price: string }
+const emptyItem = (): ItemForm => ({ product: '', category: 'MEDICAMENTOS', quantity: '', price: '' })
 
 interface Props {
   open: boolean
@@ -27,6 +28,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [items, setItems] = useState<ItemForm[]>([emptyItem()])
   const [observations, setObservations] = useState('')
+  const [totalPrice, setTotalPrice] = useState('')
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
@@ -37,6 +39,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
     setCustomer(null)
     setItems([emptyItem()])
     setObservations('')
+    setTotalPrice('')
     setQuickAddOpen(false)
     setNewCustomerName('')
     setNewCustomerPhone('')
@@ -55,8 +58,10 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
             product: i.product,
             category: i.category,
             quantity: i.quantity ? Number(i.quantity) : 1,
+            price: parsePriceInput(i.price),
           })),
         observations: observations.trim() || null,
+        totalPrice: parsePriceInput(totalPrice),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders-all'] })
@@ -121,6 +126,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                     placeholder="Produto"
                     className="flex-1"
                     autoComplete="off"
+                    maxLength={150}
                   />
                   <Select value={item.category}
                     onChange={(e) => updateItem(i, 'category', e.target.value)}
@@ -130,11 +136,20 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                   <Input
                     type="number"
                     min={1}
+                    max={1000}
+                    step={1}
                     value={item.quantity}
+                    onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
                     onChange={(e) => updateItem(i, 'quantity', e.target.value)}
                     placeholder="Qtd"
                     className="w-16"
                     required
+                  />
+                  <PriceInput
+                    value={item.price}
+                    onChange={(v) => updateItem(i, 'price', v)}
+                    placeholder="Preço un."
+                    className="w-24"
                   />
                   {items.length > 1 && (
                     <Button type="button" variant="ghost" size="sm"
@@ -148,17 +163,25 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1">
-              Observações <span className="text-gray-400">(opcional)</span>
-            </label>
-            <Input
-              value={observations}
-              onChange={(e) => setObservations(e.target.value)}
-              placeholder="Observações sobre a encomenda..."
-              maxLength={500}
-              autoComplete="off"
-            />
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-gray-700 block mb-1">
+                Observações <span className="text-gray-400">(opcional)</span>
+              </label>
+              <Input
+                value={observations}
+                onChange={(e) => setObservations(e.target.value)}
+                placeholder="Observações sobre a encomenda..."
+                maxLength={500}
+                autoComplete="off"
+              />
+            </div>
+            <div className="w-36">
+              <label className="text-xs font-medium text-gray-700 block mb-1">
+                Total <span className="text-gray-400">(opcional)</span>
+              </label>
+              <PriceInput value={totalPrice} onChange={setTotalPrice} />
+            </div>
           </div>
 
           {createMutation.isError && <ErrorMessage error={createMutation.error} />}

@@ -60,7 +60,7 @@ public class OrderService {
 
     @Transactional
     public OrderPutResponse update(UUID id, OrderPutRequest request) {
-        var order = findByIdOrThrowNotFound(id);
+        var order = findByIdWithItemsOrThrowNotFound(id);
 
         ensureOrderMutable(order);
 
@@ -69,6 +69,10 @@ public class OrderService {
         order.setCustomerId(customer.getId());
         order.setCustomerName(customer.getName());
         order.setObservations(request.observations());
+        order.setTotalPrice(request.totalPrice());
+        if (request.totalPrice() != null) {
+            order.getItems().forEach(item -> item.setPrice(null));
+        }
 
         return mapper.toOrderPutResponse(order);
     }
@@ -89,7 +93,12 @@ public class OrderService {
         ensureOrderMutable(order);
 
         var item = mapper.toOrderItem(request);
+        item.setPrice(request.price());
         item.setOrder(order);
+
+        if (request.price() != null) {
+            order.setTotalPrice(null);
+        }
 
         var savedItem = orderItemRepository.save(item);
         order.getItems().add(savedItem);
@@ -110,6 +119,11 @@ public class OrderService {
         item.setProduct(request.product());
         item.setCategory(request.category());
         item.setQuantity(request.quantity());
+        item.setPrice(request.price());
+
+        if (request.price() != null) {
+            order.setTotalPrice(null);
+        }
 
         return mapper.toOrderItemGetResponse(item);
     }

@@ -221,7 +221,7 @@ function OrdersList() {
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => navigate(`/orders/${o.id}`)}
                     >
-                      <Td className="font-medium text-gray-900">{o.customerName}</Td>
+                      <Td><span className="font-medium text-gray-900 block max-w-[180px] truncate" title={o.customerName}>{o.customerName}</span></Td>
                       <Td>
                         <OrderStatusBadge status={o.status} />
                       </Td>
@@ -338,7 +338,7 @@ function DistributorsList() {
               )}
               {(data?.content ?? []).map((d) => (
                 <Tr key={d.id}>
-                  <Td className="font-medium text-gray-900">{d.name}</Td>
+                  <Td><span className="font-medium text-gray-900 block max-w-[200px] truncate" title={d.name}>{d.name}</span></Td>
                   <Td className="text-gray-500">{formatDateShort(d.createdAt)}</Td>
                   <Td>
                     <div className="flex items-center gap-1">

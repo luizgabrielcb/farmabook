@@ -185,8 +185,8 @@ function CompoundingsList() {
                   )}
                   {paged.map((c) => (
                     <Tr key={c.id} onClick={() => navigate(`/compoundings/${c.id}`)}>
-                      <Td className="font-medium text-gray-900">{c.customerName}</Td>
-                      <Td className="text-gray-500">{c.pharmacyName}</Td>
+                      <Td><span className="font-medium text-gray-900 block max-w-[160px] truncate" title={c.customerName}>{c.customerName}</span></Td>
+                      <Td><span className="text-gray-500 block max-w-[140px] truncate" title={c.pharmacyName ?? ''}>{c.pharmacyName}</span></Td>
                       <Td className="text-gray-500">{c.quantity}</Td>
                       <Td><CompoundingStatusBadge status={c.status} /></Td>
                       <Td><PaymentStatusBadge status={c.paymentStatus} /></Td>
@@ -270,8 +270,8 @@ function PharmaciesList() {
               )}
               {(data?.content ?? []).map((p) => (
                 <Tr key={p.id}>
-                  <Td className="font-medium text-gray-900">{p.name}</Td>
-                  <Td className="text-gray-500">{p.city}</Td>
+                  <Td><span className="font-medium text-gray-900 block max-w-[200px] truncate" title={p.name}>{p.name}</span></Td>
+                  <Td><span className="text-gray-500 block max-w-[140px] truncate" title={p.city}>{p.city}</span></Td>
                   <Td className="text-gray-500">{formatDateShort(p.createdAt)}</Td>
                   <Td>
                     <div className="flex items-center gap-1">

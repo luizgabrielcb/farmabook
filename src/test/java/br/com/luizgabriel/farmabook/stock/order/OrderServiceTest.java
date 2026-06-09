@@ -174,7 +174,7 @@ class OrderServiceTest {
                 .build();
         var response = utils.newOrderPutResponse(order);
 
-        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
         BDDMockito.when(customerService.findByIdOrThrowNotFound(request.customerId())).thenReturn(newCustomer);
         BDDMockito.when(mapper.toOrderPutResponse(order)).thenReturn(response);
 
@@ -191,7 +191,7 @@ class OrderServiceTest {
         var id = UUID.randomUUID();
         var request = utils.newOrderPutRequest();
 
-        BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
+        BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(id, request))
                 .isInstanceOf(NotFoundException.class);
@@ -203,7 +203,7 @@ class OrderServiceTest {
         var order = utils.newDeliveredOrder();
         var request = utils.newOrderPutRequest();
 
-        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> service.update(order.getId(), request))
                 .isInstanceOf(ConflictException.class);

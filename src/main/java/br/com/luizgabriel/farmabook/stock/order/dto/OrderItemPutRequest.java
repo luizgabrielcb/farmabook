@@ -1,10 +1,9 @@
 package br.com.luizgabriel.farmabook.stock.order.dto;
 
 import br.com.luizgabriel.farmabook.stock.Category;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
 
 public record OrderItemPutRequest(
         @NotBlank(message = "product is required")
@@ -16,6 +15,12 @@ public record OrderItemPutRequest(
 
         @NotNull(message = "quantity is required")
         @Positive(message = "quantity must be positive")
-        Integer quantity
+        @Max(value = 1000, message = "quantity must be at most 1000")
+        Integer quantity,
+
+        @DecimalMin(value = "0.0", message = "price must be non-negative")
+        @DecimalMax(value = "100000.00", message = "price must be at most 100000")
+        @Digits(integer = 6, fraction = 2, message = "price must have at most 2 decimal places")
+        BigDecimal price
 ) {
 }

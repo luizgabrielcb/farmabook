@@ -194,7 +194,7 @@ function ShortageTab({ shortageType, label }: TabPanelProps) {
                 )}
                 {paged.map((s) => (
                   <Tr key={s.id}>
-                    <Td className="font-medium text-gray-900">{s.product}</Td>
+                    <Td><span className="font-medium text-gray-900 block max-w-[200px] truncate" title={s.product}>{s.product}</span></Td>
                     <Td><CategoryBadge category={s.category} /></Td>
                     <Td>{s.quantity ?? '—'}</Td>
                     <Td><ShortageStatusBadge status={s.status} /></Td>
