@@ -8,6 +8,8 @@ import br.com.luizgabriel.farmabook.customer.CustomerService;
 import br.com.luizgabriel.farmabook.exception.ConflictException;
 import br.com.luizgabriel.farmabook.exception.NotFoundException;
 import br.com.luizgabriel.farmabook.notification.NotificationService;
+import br.com.luizgabriel.farmabook.stock.distributor.Distributor;
+import br.com.luizgabriel.farmabook.stock.distributor.DistributorService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +59,11 @@ class OrderServiceTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private DistributorService distributorService;
+
+    private static final UUID DISTRIBUTOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
 
     // --- findAll ---
 
@@ -421,10 +428,12 @@ class OrderServiceTest {
         var order = utils.newOrder();
         var item = order.getItems().getFirst();
         var actor = userUtils.newUser();
+        var distributor = Distributor.builder().id(DISTRIBUTOR_ID).name("Test Distributor").build();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(distributorService.findByIdOrThrowNotFound(DISTRIBUTOR_ID)).thenReturn(distributor);
 
-        service.markItemAsOrdered(order.getId(), item.getId(), actor);
+        service.markItemAsOrdered(order.getId(), item.getId(), actor, DISTRIBUTOR_ID);
 
         assertThat(item.getStatus()).isEqualTo(OrderItemStatus.ORDERED);
         assertThat(item.getOrderedById()).isEqualTo(actor.getId());
@@ -442,7 +451,7 @@ class OrderServiceTest {
 
         BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.markItemAsOrdered(id, UUID.randomUUID(), actor))
+        assertThatThrownBy(() -> service.markItemAsOrdered(id, UUID.randomUUID(), actor, DISTRIBUTOR_ID))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -451,10 +460,11 @@ class OrderServiceTest {
     void markItemAsOrdered_ThrowsNotFoundException_WhenItemNotFound() {
         var order = utils.newOrder();
         var actor = userUtils.newUser();
+        var distributor = Distributor.builder().id(DISTRIBUTOR_ID).name("Test Distributor").build();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
 
-        assertThatThrownBy(() -> service.markItemAsOrdered(order.getId(), UUID.randomUUID(), actor))
+        assertThatThrownBy(() -> service.markItemAsOrdered(order.getId(), UUID.randomUUID(), actor, DISTRIBUTOR_ID))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -464,10 +474,12 @@ class OrderServiceTest {
         var order = utils.newDeliveredOrder();
         var item = order.getItems().getFirst();
         var actor = userUtils.newUser();
+        var distributor = Distributor.builder().id(DISTRIBUTOR_ID).name("Test Distributor").build();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(distributorService.findByIdOrThrowNotFound(DISTRIBUTOR_ID)).thenReturn(distributor);
 
-        assertThatThrownBy(() -> service.markItemAsOrdered(order.getId(), item.getId(), actor))
+        assertThatThrownBy(() -> service.markItemAsOrdered(order.getId(), item.getId(), actor, DISTRIBUTOR_ID))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -609,10 +621,12 @@ class OrderServiceTest {
         var order = utils.newOrder();
         var item = order.getItems().getFirst();
         var actor = userUtils.newUser();
+        var distributor = Distributor.builder().id(DISTRIBUTOR_ID).name("Test Distributor").build();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(distributorService.findByIdOrThrowNotFound(DISTRIBUTOR_ID)).thenReturn(distributor);
 
-        service.markAllAsOrdered(order.getId(), actor);
+        service.markAllAsOrdered(order.getId(), actor, DISTRIBUTOR_ID);
 
         assertThat(item.getStatus()).isEqualTo(OrderItemStatus.ORDERED);
         BDDMockito.then(notificationService).should(Mockito.never())
@@ -627,7 +641,7 @@ class OrderServiceTest {
 
         BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.markAllAsOrdered(id, actor))
+        assertThatThrownBy(() -> service.markAllAsOrdered(id, actor, DISTRIBUTOR_ID))
                 .isInstanceOf(NotFoundException.class);
     }
 

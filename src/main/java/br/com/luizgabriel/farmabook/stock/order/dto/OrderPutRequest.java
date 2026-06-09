@@ -6,6 +6,8 @@ import java.util.UUID;
 
 public record OrderPutRequest(
         @NotNull(message = "customerId is required")
-        UUID customerId
+        UUID customerId,
+
+        String observations
 ) {
 }

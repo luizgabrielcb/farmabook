@@ -104,7 +104,7 @@ public class NotificationService {
         return String.format(
                 "%s, %s! Tudo bem? A sua %s acabou de chegar aqui na farmácia.",
                 resolveGreeting(),
-                shortenName(fullName),
+                fullName,
                 itemType
         );
     }
@@ -114,12 +114,6 @@ public class NotificationService {
         if (hour >= 5 && hour < 12) return "Bom dia";
         if (hour >= 12 && hour < 18) return "Boa tarde";
         return "Boa noite";
-    }
-
-    private String shortenName(String fullName) {
-        var parts = fullName.trim().split("\\s+");
-        if (parts.length == 1) return parts[0];
-        return parts[0] + " " + parts[1];
     }
 
     private String sanitizePhone(String phone) {

@@ -47,6 +47,14 @@ public class Order extends Auditable {
     @Column(name = "created_by_name", nullable = false, length = 100)
     private String createdByName;
 
+    @Column(columnDefinition = "TEXT")
+    private String observations;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 20)
+    @Builder.Default
+    private OrderPaymentStatus paymentStatus = OrderPaymentStatus.TO_PAY;
+
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,

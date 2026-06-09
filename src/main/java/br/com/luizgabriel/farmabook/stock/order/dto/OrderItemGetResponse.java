@@ -2,7 +2,9 @@ package br.com.luizgabriel.farmabook.stock.order.dto;
 
 import br.com.luizgabriel.farmabook.stock.Category;
 import br.com.luizgabriel.farmabook.stock.order.OrderItemStatus;
+import br.com.luizgabriel.farmabook.stock.order.OrderPaymentStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -26,6 +28,11 @@ public record OrderItemGetResponse(
         Instant deliveredAt,
 
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+
+        UUID distributorId,
+        String distributorName,
+        BigDecimal price,
+        OrderPaymentStatus paymentStatus
 ) {
 }

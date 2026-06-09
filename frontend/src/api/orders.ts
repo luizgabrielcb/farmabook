@@ -23,13 +23,17 @@ export async function getOrder(id: string): Promise<Order> {
 export async function createOrder(body: {
   customerId: string
   items: OrderItemInput[]
+  observations?: string | null
 }): Promise<Order> {
   const { data } = await api.post<Order>('/orders', body)
   return data
 }
 
-export async function updateOrder(id: string, customerId: string): Promise<Order> {
-  const { data } = await api.put<Order>(`/orders/${id}`, { customerId })
+export async function updateOrder(
+  id: string,
+  body: { customerId: string; observations?: string | null },
+): Promise<Order> {
+  const { data } = await api.put<Order>(`/orders/${id}`, body)
   return data
 }
 
@@ -37,8 +41,8 @@ export async function deleteOrder(id: string): Promise<void> {
   await api.delete(`/orders/${id}`)
 }
 
-export async function markOrderAsOrdered(id: string): Promise<void> {
-  await api.patch(`/orders/${id}/mark-as-ordered`)
+export async function markOrderAsOrdered(id: string, distributorId: string): Promise<void> {
+  await api.patch(`/orders/${id}/mark-as-ordered`, { distributorId })
 }
 
 export async function markOrderAsReceived(id: string): Promise<void> {
@@ -67,8 +71,12 @@ export async function deleteOrderItem(orderId: string, itemId: string): Promise<
   await api.delete(`/orders/${orderId}/items/${itemId}`)
 }
 
-export async function markItemAsOrdered(orderId: string, itemId: string): Promise<void> {
-  await api.patch(`/orders/${orderId}/items/${itemId}/mark-as-ordered`)
+export async function markItemAsOrdered(
+  orderId: string,
+  itemId: string,
+  distributorId: string,
+): Promise<void> {
+  await api.patch(`/orders/${orderId}/items/${itemId}/mark-as-ordered`, { distributorId })
 }
 
 export async function markItemAsReceived(orderId: string, itemId: string): Promise<void> {
@@ -77,4 +85,20 @@ export async function markItemAsReceived(orderId: string, itemId: string): Promi
 
 export async function markItemAsDelivered(orderId: string, itemId: string): Promise<void> {
   await api.patch(`/orders/${orderId}/items/${itemId}/mark-as-delivered`)
+}
+
+export async function markItemPaymentAsPaid(orderId: string, itemId: string): Promise<void> {
+  await api.patch(`/orders/${orderId}/items/${itemId}/payment/mark-as-paid`)
+}
+
+export async function markItemPaymentAsMakeNote(orderId: string, itemId: string): Promise<void> {
+  await api.patch(`/orders/${orderId}/items/${itemId}/payment/mark-as-make-note`)
+}
+
+export async function markItemPaymentAsNoted(orderId: string, itemId: string): Promise<void> {
+  await api.patch(`/orders/${orderId}/items/${itemId}/payment/mark-as-noted`)
+}
+
+export async function markItemPaymentAsToPay(orderId: string, itemId: string): Promise<void> {
+  await api.patch(`/orders/${orderId}/items/${itemId}/payment/mark-as-to-pay`)
 }

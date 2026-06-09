@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -36,6 +37,7 @@ public class OrderItem extends Auditable {
     @Column(nullable = false, length = 20)
     private Category category;
 
+    @Column(nullable = false)
     private Integer quantity;
 
     @Enumerated(EnumType.STRING)
@@ -62,4 +64,18 @@ public class OrderItem extends Auditable {
     private String deliveredByName;
     @Column(name = "delivered_at")
     private Instant deliveredAt;
+
+    @Column(name = "distributor_id", columnDefinition = "uuid")
+    private UUID distributorId;
+
+    @Column(name = "distributor_name", length = 100)
+    private String distributorName;
+
+    @Column(precision = 8, scale = 2)
+    private BigDecimal price;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 20)
+    @Builder.Default
+    private OrderPaymentStatus paymentStatus = OrderPaymentStatus.TO_PAY;
 }

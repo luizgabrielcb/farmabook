@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import type { OrderStatus, OrderItemStatus, ShortageStatus, CompoundingStatus, PaymentStatus } from '@/types'
+import type { OrderStatus, OrderItemStatus, ShortageStatus, CompoundingStatus, PaymentStatus, OrderPaymentStatus } from '@/types'
 
 const orderStatusMap: Record<OrderStatus, { label: string; variant: 'gray' | 'blue' | 'yellow' | 'green' | 'red' | 'purple' }> = {
   PENDING: { label: 'Pendente', variant: 'gray' },
@@ -44,5 +44,17 @@ export function CompoundingStatusBadge({ status }: { status: CompoundingStatus }
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
   const map = paymentStatusMap[status]
+  return <Badge variant={map.variant}>{map.label}</Badge>
+}
+
+const orderPaymentStatusMap: Record<OrderPaymentStatus, { label: string; variant: 'gray' | 'blue' | 'yellow' | 'green' | 'red' | 'purple' }> = {
+  TO_PAY: { label: 'A Pagar', variant: 'gray' },
+  MAKE_NOTE: { label: 'Fazer Nota', variant: 'yellow' },
+  PAID: { label: 'Pago', variant: 'green' },
+  NOTED: { label: 'Anotado', variant: 'purple' },
+}
+
+export function OrderPaymentStatusBadge({ status }: { status: OrderPaymentStatus }) {
+  const map = orderPaymentStatusMap[status]
   return <Badge variant={map.variant}>{map.label}</Badge>
 }

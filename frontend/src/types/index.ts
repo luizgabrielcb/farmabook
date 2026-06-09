@@ -1,6 +1,7 @@
 export type UserRole = 'ADMIN' | 'SELLER'
 export type OrderStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
 export type OrderItemStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
+export type OrderPaymentStatus = 'TO_PAY' | 'MAKE_NOTE' | 'PAID' | 'NOTED'
 export type ShortageStatus = 'PENDING' | 'ORDERED'
 export type ShortageType = 'WANIA' | 'FRANCISCO'
 export type CompoundingStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
@@ -56,6 +57,10 @@ export interface OrderItem {
   deliveredAt: string | null
   createdAt: string
   updatedAt: string
+  distributorId: string | null
+  distributorName: string | null
+  price: number | null
+  paymentStatus: OrderPaymentStatus
 }
 
 export interface Order {
@@ -68,7 +73,16 @@ export interface Order {
   createdByName: string
   createdAt: string
   updatedAt?: string
+  observations: string | null
+  paymentStatus: OrderPaymentStatus
+  totalPrice: number | null
   items: OrderItem[]
+}
+
+export interface Distributor {
+  id: string
+  name: string
+  createdAt: string
 }
 
 export interface Shortage {

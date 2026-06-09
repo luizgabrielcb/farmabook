@@ -1,7 +1,9 @@
 package br.com.luizgabriel.farmabook.stock.order.dto;
 
+import br.com.luizgabriel.farmabook.stock.order.OrderPaymentStatus;
 import br.com.luizgabriel.farmabook.stock.order.OrderStatus;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +18,9 @@ public record OrderGetResponse(
         String createdByName,
         Instant createdAt,
         Instant updatedAt,
+        String observations,
+        OrderPaymentStatus paymentStatus,
+        BigDecimal totalPrice,
         List<OrderItemGetResponse> items
 ) {
 }

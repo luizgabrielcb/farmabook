@@ -14,7 +14,8 @@ public record OrderItemPutRequest(
         @NotNull(message = "category is required")
         Category category,
 
-        @Positive(message = "quantity must be positive when informed")
+        @NotNull(message = "quantity is required")
+        @Positive(message = "quantity must be positive")
         Integer quantity
 ) {
 }

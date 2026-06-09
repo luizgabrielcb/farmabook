@@ -74,11 +74,14 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/mark-as-ordered")
-    public ResponseEntity<Void> markAllAsOrdered(@PathVariable UUID id, @RequestHeader("X-Auth-Pin") String pin) {
+    public ResponseEntity<Void> markAllAsOrdered(
+            @PathVariable UUID id,
+            @RequestHeader("X-Auth-Pin") String pin,
+            @RequestBody @Valid MarkItemAsOrderedRequest request) {
 
         var actor = authService.authenticatedUser(pin);
 
-        service.markAllAsOrdered(id, actor);
+        service.markAllAsOrdered(id, actor, request.distributorId());
 
         return ResponseEntity.noContent().build();
     }
@@ -147,11 +150,12 @@ public class OrderController {
     public ResponseEntity<Void> markItemAsOrdered(
             @PathVariable UUID id,
             @PathVariable UUID itemId,
-            @RequestHeader("X-Auth-Pin") String pin) {
+            @RequestHeader("X-Auth-Pin") String pin,
+            @RequestBody @Valid MarkItemAsOrderedRequest request) {
 
         var actor = authService.authenticatedUser(pin);
 
-        service.markItemAsOrdered(id, itemId, actor);
+        service.markItemAsOrdered(id, itemId, actor, request.distributorId());
 
         return ResponseEntity.noContent().build();
     }
@@ -179,6 +183,42 @@ public class OrderController {
 
         service.markItemAsDelivered(id, itemId, actor);
 
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/items/{itemId}/payment/mark-as-paid")
+    public ResponseEntity<Void> markItemPaymentAsPaid(
+            @PathVariable UUID id, @PathVariable UUID itemId,
+            @RequestHeader("X-Auth-Pin") String pin) {
+        authService.authenticatedUser(pin);
+        service.markItemPaymentAsPaid(id, itemId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/items/{itemId}/payment/mark-as-make-note")
+    public ResponseEntity<Void> markItemPaymentAsMakeNote(
+            @PathVariable UUID id, @PathVariable UUID itemId,
+            @RequestHeader("X-Auth-Pin") String pin) {
+        authService.authenticatedUser(pin);
+        service.markItemPaymentAsMakeNote(id, itemId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/items/{itemId}/payment/mark-as-noted")
+    public ResponseEntity<Void> markItemPaymentAsNoted(
+            @PathVariable UUID id, @PathVariable UUID itemId,
+            @RequestHeader("X-Auth-Pin") String pin) {
+        authService.authenticatedUser(pin);
+        service.markItemPaymentAsNoted(id, itemId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/items/{itemId}/payment/mark-as-to-pay")
+    public ResponseEntity<Void> markItemPaymentAsToPay(
+            @PathVariable UUID id, @PathVariable UUID itemId,
+            @RequestHeader("X-Auth-Pin") String pin) {
+        authService.authenticatedUser(pin);
+        service.markItemPaymentAsToPay(id, itemId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -13,5 +13,7 @@ public record OrderPostRequest(
 
         @NotEmpty(message = "order must have at least one item")
         @Valid
-        List<OrderItemPostRequest> items) {
+        List<OrderItemPostRequest> items,
+
+        String observations) {
 }

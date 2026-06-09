@@ -5,6 +5,7 @@ import br.com.luizgabriel.farmabook.stock.Category;
 import br.com.luizgabriel.farmabook.stock.order.*;
 import br.com.luizgabriel.farmabook.stock.order.dto.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +79,7 @@ public class OrderUtils {
     }
 
     public OrderPostRequest newOrderPostRequest() {
-        return new OrderPostRequest(CustomerUtils.CUSTOMER_ID, List.of(newOrderItemPostRequest()));
+        return new OrderPostRequest(CustomerUtils.CUSTOMER_ID, List.of(newOrderItemPostRequest()), null);
     }
 
     public OrderItemPostRequest newOrderItemPostRequest() {
@@ -90,7 +91,7 @@ public class OrderUtils {
     }
 
     public OrderPutRequest newOrderPutRequest() {
-        return new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID);
+        return new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null);
     }
 
     public OrderPostResponse newOrderPostResponse(Order order) {
@@ -106,7 +107,7 @@ public class OrderUtils {
     public OrderGetResponse newOrderGetResponse(Order order) {
         return new OrderGetResponse(order.getId(), order.getCustomerId(), order.getCustomerName(),
                 order.getStatus(), order.getNotifiedAt(), order.getCreatedById(), order.getCreatedByName(),
-                Instant.now(), Instant.now(), List.of());
+                Instant.now(), Instant.now(), order.getObservations(), order.getPaymentStatus(), null, List.of());
     }
 
     public OrderItemGetResponse newOrderItemGetResponse(OrderItem item) {
@@ -114,7 +115,8 @@ public class OrderUtils {
                 item.getStatus(), item.getOrderedById(), item.getOrderedByName(), item.getOrderedAt(),
                 item.getReceivedById(), item.getReceivedByName(), item.getReceivedAt(),
                 item.getDeliveredById(), item.getDeliveredByName(), item.getDeliveredAt(),
-                Instant.now(), Instant.now());
+                Instant.now(), Instant.now(),
+                item.getDistributorId(), item.getDistributorName(), item.getPrice(), item.getPaymentStatus());
     }
 
     public NotificationGetResponse newNotificationGetResponse() {

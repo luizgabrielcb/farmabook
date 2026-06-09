@@ -5,6 +5,8 @@ import br.com.luizgabriel.farmabook.customer.CustomerService;
 import br.com.luizgabriel.farmabook.exception.ConflictException;
 import br.com.luizgabriel.farmabook.exception.NotFoundException;
 import br.com.luizgabriel.farmabook.notification.NotificationService;
+import br.com.luizgabriel.farmabook.stock.distributor.Distributor;
+import br.com.luizgabriel.farmabook.stock.distributor.DistributorService;
 import br.com.luizgabriel.farmabook.stock.order.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,7 @@ public class OrderService {
     private final OrderMapper mapper;
     private final CustomerService customerService;
     private final NotificationService notificationService;
+    private final DistributorService distributorService;
 
     @Transactional(readOnly = true)
     public Page<OrderGetResponse> findAll(Pageable pageable) {
@@ -65,6 +68,7 @@ public class OrderService {
 
         order.setCustomerId(customer.getId());
         order.setCustomerName(customer.getName());
+        order.setObservations(request.observations());
 
         return mapper.toOrderPutResponse(order);
     }
@@ -124,12 +128,14 @@ public class OrderService {
     }
 
     @Transactional
-    public void markItemAsOrdered(UUID orderId, UUID itemId, User actor) {
+    public void markItemAsOrdered(UUID orderId, UUID itemId, User actor, UUID distributorId) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
 
         var item = findItemOrThrowNotFound(order, itemId);
 
-        applyMarkAsOrdered(item, actor);
+        var distributor = distributorService.findByIdOrThrowNotFound(distributorId);
+
+        applyMarkAsOrdered(item, actor, distributor);
 
         recalculateOrderStatus(order);
     }
@@ -157,12 +163,14 @@ public class OrderService {
     }
 
     @Transactional
-    public void markAllAsOrdered(UUID orderId, User actor) {
+    public void markAllAsOrdered(UUID orderId, User actor, UUID distributorId) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
+
+        var distributor = distributorService.findByIdOrThrowNotFound(distributorId);
 
         order.getItems().stream()
                 .filter(i -> i.getStatus() != OrderItemStatus.DELIVERED)
-                .forEach(i -> applyMarkAsOrdered(i, actor));
+                .forEach(i -> applyMarkAsOrdered(i, actor, distributor));
 
         recalculateOrderStatus(order);
     }
@@ -190,7 +198,58 @@ public class OrderService {
         recalculateOrderStatus(order);
     }
 
-    private void applyMarkAsOrdered(OrderItem item, User actor) {
+    @Transactional
+    public void markItemPaymentAsPaid(UUID orderId, UUID itemId) {
+        var order = findByIdWithItemsOrThrowNotFound(orderId);
+        var item = findItemOrThrowNotFound(order, itemId);
+        if (item.getPaymentStatus() == OrderPaymentStatus.NOTED) {
+            throw new ConflictException("Item with id '" + itemId + "' payment is NOTED and cannot be changed");
+        }
+        item.setPaymentStatus(OrderPaymentStatus.PAID);
+        recalculateOrderPaymentStatus(order);
+        repository.save(order);
+    }
+
+    @Transactional
+    public void markItemPaymentAsMakeNote(UUID orderId, UUID itemId) {
+        var order = findByIdWithItemsOrThrowNotFound(orderId);
+        var item = findItemOrThrowNotFound(order, itemId);
+        if (item.getPaymentStatus() == OrderPaymentStatus.PAID) {
+            throw new ConflictException("Item with id '" + itemId + "' payment is PAID and cannot be changed");
+        }
+        if (item.getPaymentStatus() == OrderPaymentStatus.NOTED) {
+            throw new ConflictException("Item with id '" + itemId + "' payment is NOTED and cannot be changed");
+        }
+        item.setPaymentStatus(OrderPaymentStatus.MAKE_NOTE);
+        recalculateOrderPaymentStatus(order);
+        repository.save(order);
+    }
+
+    @Transactional
+    public void markItemPaymentAsNoted(UUID orderId, UUID itemId) {
+        var order = findByIdWithItemsOrThrowNotFound(orderId);
+        var item = findItemOrThrowNotFound(order, itemId);
+        if (item.getPaymentStatus() != OrderPaymentStatus.MAKE_NOTE) {
+            throw new ConflictException("Item with id '" + itemId + "' payment must be MAKE_NOTE to transition to NOTED");
+        }
+        item.setPaymentStatus(OrderPaymentStatus.NOTED);
+        recalculateOrderPaymentStatus(order);
+        repository.save(order);
+    }
+
+    @Transactional
+    public void markItemPaymentAsToPay(UUID orderId, UUID itemId) {
+        var order = findByIdWithItemsOrThrowNotFound(orderId);
+        var item = findItemOrThrowNotFound(order, itemId);
+        if (item.getPaymentStatus() != OrderPaymentStatus.MAKE_NOTE) {
+            throw new ConflictException("Item with id '" + itemId + "' payment must be MAKE_NOTE to revert to TO_PAY");
+        }
+        item.setPaymentStatus(OrderPaymentStatus.TO_PAY);
+        recalculateOrderPaymentStatus(order);
+        repository.save(order);
+    }
+
+    private void applyMarkAsOrdered(OrderItem item, User actor, Distributor distributor) {
         if (item.getStatus() == OrderItemStatus.DELIVERED) {
             throw new ConflictException(
                     "Item with id '" + item.getId() + "' is DELIVERED and cannot be marked as ORDERED");
@@ -207,6 +266,8 @@ public class OrderService {
         item.setOrderedById(actor.getId());
         item.setOrderedByName(actor.getName());
         item.setOrderedAt(Instant.now());
+        item.setDistributorId(distributor.getId());
+        item.setDistributorName(distributor.getName());
     }
 
     private void applyMarkAsReceived(OrderItem item, User actor) {
@@ -240,6 +301,14 @@ public class OrderService {
         item.setDeliveredAt(Instant.now());
     }
 
+    private void recalculateOrderPaymentStatus(Order order) {
+        var minPaymentStatus = order.getItems().stream()
+                .map(OrderItem::getPaymentStatus)
+                .min(Comparator.naturalOrder())
+                .orElse(OrderPaymentStatus.TO_PAY);
+        order.setPaymentStatus(minPaymentStatus);
+    }
+
     private void recalculateOrderStatus(Order order) {
         var previousStatus = order.getStatus();
 
@@ -261,6 +330,9 @@ public class OrderService {
             notificationService.generateForOrderReceived(order)
                     .ifPresent(notification -> order.setNotifiedAt(notification.sentAt()));
         }
+
+        recalculateOrderPaymentStatus(order);
+        repository.save(order);
     }
 
     private Order findByIdOrThrowNotFound(UUID id) {

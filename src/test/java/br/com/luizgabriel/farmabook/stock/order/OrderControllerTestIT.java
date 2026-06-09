@@ -27,6 +27,7 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     private static final UUID ORDER_ID = UUID.fromString("00000000-0000-0000-0000-000000000010");
     private static final UUID ITEM_ID = UUID.fromString("00000000-0000-0000-0000-000000000011");
     private static final UUID NONEXISTENT_ID = UUID.fromString("00000000-0000-0000-0000-999999999999");
+    private static final UUID DISTRIBUTOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000020");
 
     @Autowired
     private FileUtils fileUtils;
@@ -316,11 +317,13 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     }
 
     @Test
-    @Sql("/sql/order/insert-one-order-pending.sql")
+    @Sql({"/sql/order/insert-one-order-pending.sql", "/sql/distributor/insert-one-distributor.sql"})
     @DisplayName("PATCH /orders/{id}/mark-as-ordered should return 204 and transition all items to ORDERED when successful")
     void markAllAsOrdered_ReturnsNoContent_WhenSuccessful() {
         RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body("{\"distributorId\": \"" + DISTRIBUTOR_ID + "\"}")
                 .when()
                 .patch(URL + "/" + ORDER_ID + "/mark-as-ordered")
                 .then()
@@ -335,12 +338,15 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     }
 
     @Test
+    @Sql("/sql/distributor/insert-one-distributor.sql")
     @DisplayName("PATCH /orders/{id}/mark-as-ordered should return 404 when order is not found")
     void markAllAsOrdered_ReturnsNotFound_WhenOrderNotFound() {
         var expected = fileUtils.readResourceFile("order/get-response-order-not-found-404.json");
 
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body("{\"distributorId\": \"" + DISTRIBUTOR_ID + "\"}")
                 .when()
                 .patch(URL + "/" + NONEXISTENT_ID + "/mark-as-ordered")
                 .then()
@@ -650,11 +656,13 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     }
 
     @Test
-    @Sql("/sql/order/insert-one-order-pending.sql")
+    @Sql({"/sql/order/insert-one-order-pending.sql", "/sql/distributor/insert-one-distributor.sql"})
     @DisplayName("PATCH /orders/{id}/items/{itemId}/mark-as-ordered should return 204 and transition item when successful")
     void markItemAsOrdered_ReturnsNoContent_WhenSuccessful() {
         RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body("{\"distributorId\": \"" + DISTRIBUTOR_ID + "\"}")
                 .when()
                 .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/mark-as-ordered")
                 .then()
@@ -668,12 +676,15 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     }
 
     @Test
+    @Sql("/sql/distributor/insert-one-distributor.sql")
     @DisplayName("PATCH /orders/{id}/items/{itemId}/mark-as-ordered should return 404 when order is not found")
     void markItemAsOrdered_ReturnsNotFound_WhenOrderNotFound() {
         var expected = fileUtils.readResourceFile("order/get-response-order-not-found-404.json");
 
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body("{\"distributorId\": \"" + DISTRIBUTOR_ID + "\"}")
                 .when()
                 .patch(URL + "/" + NONEXISTENT_ID + "/items/" + NONEXISTENT_ID + "/mark-as-ordered")
                 .then()
@@ -685,13 +696,15 @@ class OrderControllerTestIT extends IntegrationTestConfig {
     }
 
     @Test
-    @Sql("/sql/order/insert-one-order-delivered.sql")
+    @Sql({"/sql/order/insert-one-order-delivered.sql", "/sql/distributor/insert-one-distributor.sql"})
     @DisplayName("PATCH /orders/{id}/items/{itemId}/mark-as-ordered should return 409 when item is DELIVERED")
     void markItemAsOrdered_ReturnsConflict_WhenItemIsDelivered() {
         var expected = fileUtils.readResourceFile("order/patch-response-order-item-mark-ordered-conflict-409.json");
 
         var body = RestAssured.given()
                 .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body("{\"distributorId\": \"" + DISTRIBUTOR_ID + "\"}")
                 .when()
                 .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/mark-as-ordered")
                 .then()

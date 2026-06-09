@@ -26,6 +26,7 @@ interface Props {
 export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [items, setItems] = useState<ItemForm[]>([emptyItem()])
+  const [observations, setObservations] = useState('')
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
@@ -35,6 +36,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
   function reset() {
     setCustomer(null)
     setItems([emptyItem()])
+    setObservations('')
     setQuickAddOpen(false)
     setNewCustomerName('')
     setNewCustomerPhone('')
@@ -49,7 +51,12 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
         customerId: customer!.id,
         items: items
           .filter((i) => i.product.trim())
-          .map((i) => ({ product: i.product, category: i.category, quantity: i.quantity ? Number(i.quantity) : null })),
+          .map((i) => ({
+            product: i.product,
+            category: i.category,
+            quantity: i.quantity ? Number(i.quantity) : 1,
+          })),
+        observations: observations.trim() || null,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders-all'] })
@@ -127,6 +134,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                     onChange={(e) => updateItem(i, 'quantity', e.target.value)}
                     placeholder="Qtd"
                     className="w-16"
+                    required
                   />
                   {items.length > 1 && (
                     <Button type="button" variant="ghost" size="sm"
@@ -138,6 +146,19 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">
+              Observações <span className="text-gray-400">(opcional)</span>
+            </label>
+            <Input
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              placeholder="Observações sobre a encomenda..."
+              maxLength={500}
+              autoComplete="off"
+            />
           </div>
 
           {createMutation.isError && <ErrorMessage error={createMutation.error} />}
