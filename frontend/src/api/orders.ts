@@ -33,7 +33,7 @@ export async function createOrder(body: {
 
 export async function updateOrder(
   id: string,
-  body: { customerId: string; observations?: string | null; totalPrice?: number | null },
+  body: { customerId: string; observations?: string | null; totalPrice?: number | null; paymentStatus?: string | null },
 ): Promise<Order> {
   const { data } = await api.put<Order>(`/orders/${id}`, body)
   return data

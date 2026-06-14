@@ -1,27 +1,25 @@
 package br.com.luizgabriel.farmabook.stock.shortage.dto;
 
-import br.com.luizgabriel.farmabook.stock.Category;
-import br.com.luizgabriel.farmabook.stock.shortage.ShortageStatus;
+import br.com.luizgabriel.farmabook.stock.shortage.ShortageOrderStatus;
 import br.com.luizgabriel.farmabook.stock.shortage.ShortageType;
 
-import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
-public record ShortageGetResponse(
+public record ShortageOrderGetResponse(
         UUID id,
-        String product,
-        Category category,
-        Integer quantity,
-        ShortageStatus status,
         ShortageType shortageType,
+        UUID distributorId,
+        String distributorName,
+        ShortageOrderStatus status,
         UUID createdById,
         String createdByName,
         UUID orderedById,
         String orderedByName,
         Instant orderedAt,
-        UUID shortageOrderId,
-        BigDecimal costPrice,
+        String observations,
+        List<ShortageGetResponse> shortages,
         Instant createdAt,
         Instant updatedAt
 ) {

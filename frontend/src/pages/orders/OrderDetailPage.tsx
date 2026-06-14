@@ -25,13 +25,13 @@ import { Select } from '@/components/ui/select'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
 import { formatDate } from '@/lib/utils'
-import { ArrowLeft, Plus, Trash2, Pencil, MessageCircle, Settings2 } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Pencil, MessageCircle, Settings2, X } from 'lucide-react'
 import type { Category, Distributor, OrderItem, Notification } from '@/types'
 
 interface ItemForm { product: string; category: Category; quantity: string; price: string }
 const emptyItemForm: ItemForm = { product: '', category: 'MEDICAMENTOS', quantity: '', price: '' }
 
-type DistributorPickerState = null | 'bulk' | { itemId: string }
+type DistributorPickerState = null | 'bulk' | 'bulk-selected' | { itemId: string }
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -49,6 +49,8 @@ export function OrderDetailPage() {
   const [editOrderOpen, setEditOrderOpen] = useState(false)
   const [editObservations, setEditObservations] = useState('')
   const [editTotalPrice, setEditTotalPrice] = useState('')
+  const [editPaymentStatus, setEditPaymentStatus] = useState<string>('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const { data: order, isLoading, error } = useQuery({
     queryKey: ['order', id],
@@ -77,6 +79,7 @@ export function OrderDetailPage() {
       customerId: order!.customerId,
       observations: editObservations.trim() || null,
       totalPrice: parsePriceInput(editTotalPrice),
+      paymentStatus: editPaymentStatus || null,
     }),
     onSuccess: () => { setEditOrderOpen(false); invalidate() },
   })
@@ -84,6 +87,7 @@ export function OrderDetailPage() {
   function openEditOrder() {
     setEditObservations(order?.observations ?? '')
     setEditTotalPrice(order?.totalPrice != null ? String(order.totalPrice).replace('.', ',') : '')
+    setEditPaymentStatus('')
     updateOrderMutation.reset()
     setEditOrderOpen(true)
   }
@@ -106,6 +110,54 @@ export function OrderDetailPage() {
     mutationFn: () => markOrderAsDelivered(id!),
     onSuccess: invalidate,
   })
+
+  function toggleSelectItem(itemId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(itemId) ? next.delete(itemId) : next.add(itemId)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(selectableItems.map((i) => i.id)))
+    }
+  }
+
+  async function bulkMarkReceived() {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.status === 'ORDERED')
+    if (!targets.length) return
+    withPin(async () => {
+      for (const i of targets) await markItemAsReceived(id!, i.id)
+      setSelectedIds(new Set())
+      checkForNotification()
+    })
+  }
+
+  async function bulkMarkDelivered() {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.status === 'RECEIVED')
+    if (!targets.length) return
+    if (!await confirm(`Marcar ${targets.length} item(s) como entregue? Esta ação não pode ser desfeita.`)) return
+    withPin(async () => {
+      for (const i of targets) await markItemAsDelivered(id!, i.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
+  async function bulkDelete() {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.status !== 'DELIVERED')
+    if (!targets.length) return
+    if (!await confirm(`Remover ${targets.length} item(s) da encomenda?`)) return
+    withPin(async () => {
+      for (const i of targets) await deleteOrderItem(id!, i.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
 
   const saveItemMutation = useMutation({
     mutationFn: () => {
@@ -160,6 +212,59 @@ export function OrderDetailPage() {
     })
   }
 
+  async function bulkMarkOrdered(distributorId: string) {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.status === 'PENDING')
+    withPin(async () => {
+      for (const i of targets) await markItemAsOrdered(id!, i.id, distributorId)
+      setDistributorPicker(null)
+      setPickedDistributor(null)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
+  async function bulkPayPaid() {
+    const targets = (order?.items ?? []).filter(
+      (i) => selectedIds.has(i.id) && (i.paymentStatus === 'TO_PAY' || i.paymentStatus === 'MAKE_NOTE'),
+    )
+    if (!targets.length) return
+    withPin(async () => {
+      for (const i of targets) await markItemPaymentAsPaid(id!, i.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
+  async function bulkPayMakeNote() {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.paymentStatus === 'TO_PAY')
+    if (!targets.length) return
+    withPin(async () => {
+      for (const i of targets) await markItemPaymentAsMakeNote(id!, i.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
+  async function bulkPayToPay() {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.paymentStatus === 'MAKE_NOTE')
+    if (!targets.length) return
+    withPin(async () => {
+      for (const i of targets) await markItemPaymentAsToPay(id!, i.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
+  async function bulkPayNoted() {
+    const targets = (order?.items ?? []).filter((i) => selectedIds.has(i.id) && i.paymentStatus === 'MAKE_NOTE')
+    if (!targets.length) return
+    withPin(async () => {
+      for (const i of targets) await markItemPaymentAsNoted(id!, i.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
   if (isLoading) return <div className="flex justify-center py-20"><Spinner /></div>
   if (error) return <div className="p-6"><ErrorMessage error={error} /></div>
   if (!order) return null
@@ -167,6 +272,9 @@ export function OrderDetailPage() {
   const isDelivered = order.status === 'DELIVERED'
   const hasPending = order.items.some((i) => i.status === 'PENDING')
   const hasOrdered = order.items.some((i) => i.status === 'ORDERED')
+  const selectableItems = order.items.filter((i) => i.status !== 'DELIVERED')
+  const allSelected = selectableItems.length > 0 && selectableItems.every((i) => selectedIds.has(i.id))
+  const someSelected = selectedIds.size > 0
   const hasReceived = order.items.some((i) => i.status === 'RECEIVED')
 
   async function handleDelete() {
@@ -269,9 +377,57 @@ export function OrderDetailPage() {
               </Button>
             )}
           </div>
+
+          {someSelected && (
+            <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm">
+              <button onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:text-blue-700 cursor-pointer">
+                <X size={14} />
+              </button>
+              <span className="text-blue-700 font-medium">{selectedIds.size} selecionado(s)</span>
+              <div className="flex items-center gap-2 ml-2">
+                {order.items.some((i) => selectedIds.has(i.id) && i.status === 'PENDING') && (
+                  <Button variant="secondary" size="sm" onClick={() => openDistributorPicker('bulk-selected')}>Marcar pedido</Button>
+                )}
+                {order.items.some((i) => selectedIds.has(i.id) && i.status === 'ORDERED') && (
+                  <Button variant="secondary" size="sm" onClick={bulkMarkReceived}>Marcar recebido</Button>
+                )}
+                {order.items.some((i) => selectedIds.has(i.id) && i.status === 'RECEIVED') && (
+                  <Button variant="secondary" size="sm" onClick={bulkMarkDelivered}>Marcar entregue</Button>
+                )}
+                <div className="border-l border-blue-200 pl-2 ml-1 flex items-center gap-2">
+                  {order.items.some((i) => selectedIds.has(i.id) && (i.paymentStatus === 'TO_PAY' || i.paymentStatus === 'MAKE_NOTE')) && (
+                    <Button variant="secondary" size="sm" onClick={bulkPayPaid}>Pago</Button>
+                  )}
+                  {order.items.some((i) => selectedIds.has(i.id) && i.paymentStatus === 'TO_PAY') && (
+                    <Button variant="secondary" size="sm" onClick={bulkPayMakeNote}>Fazer nota</Button>
+                  )}
+                  {order.items.some((i) => selectedIds.has(i.id) && i.paymentStatus === 'MAKE_NOTE') && (
+                    <>
+                      <Button variant="secondary" size="sm" onClick={bulkPayToPay}>A pagar</Button>
+                      <Button variant="secondary" size="sm" onClick={bulkPayNoted}>Anotado</Button>
+                    </>
+                  )}
+                </div>
+                <Button variant="danger" size="sm" onClick={bulkDelete}>
+                  <Trash2 size={12} /> Excluir
+                </Button>
+              </div>
+            </div>
+          )}
+
           <Table>
             <TableHead>
               <tr>
+                {!isDelivered && (
+                  <Th className="w-8">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="accent-gray-700 cursor-pointer"
+                    />
+                  </Th>
+                )}
                 <Th>Produto</Th><Th>Categoria</Th><Th>Qtd.</Th><Th>Status</Th>
                 <Th>Distribuidora</Th><Th>Preço un.</Th><Th>Pagamento</Th>
                 <Th>Pedido por</Th><Th>Recebido por</Th><Th />
@@ -279,10 +435,22 @@ export function OrderDetailPage() {
             </TableHead>
             <TableBody>
               {order.items.length === 0 && (
-                <tr><Td colSpan={10} className="text-center text-gray-400 py-8">Nenhum item.</Td></tr>
+                <tr><Td colSpan={isDelivered ? 10 : 11} className="text-center text-gray-400 py-8">Nenhum item.</Td></tr>
               )}
               {order.items.map((item) => (
                 <Tr key={item.id}>
+                  {!isDelivered && (
+                    <Td>
+                      {item.status !== 'DELIVERED' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelectItem(item.id)}
+                          className="accent-gray-700 cursor-pointer"
+                        />
+                      )}
+                    </Td>
+                  )}
                   <Td className="max-w-[200px]">
                     <span className="font-medium text-gray-900 block truncate" title={item.product}>{item.product}</span>
                   </Td>
@@ -419,6 +587,8 @@ export function OrderDetailPage() {
                 if (!pickedDistributor) return
                 if (distributorPicker === 'bulk') {
                   withPin(() => markAllOrdered.mutate(pickedDistributor.id))
+                } else if (distributorPicker === 'bulk-selected') {
+                  bulkMarkOrdered(pickedDistributor.id)
                 } else if (distributorPicker && typeof distributorPicker === 'object') {
                   withPin(() =>
                     markItemOrderedWithDistributor(distributorPicker.itemId, pickedDistributor.id),
@@ -468,6 +638,27 @@ export function OrderDetailPage() {
             </label>
             <PriceInput value={editTotalPrice} onChange={setEditTotalPrice} />
           </div>
+          {(order.paymentStatus === 'TO_PAY' || order.paymentStatus === 'MAKE_NOTE') && (
+            <div>
+              <label className="text-xs font-medium text-gray-700 block mb-1">Status de pagamento</label>
+              <Select value={editPaymentStatus} onChange={(e) => setEditPaymentStatus(e.target.value)}>
+                <option value="">Manter atual</option>
+                {order.paymentStatus === 'TO_PAY' && (
+                  <>
+                    <option value="PAID">Pago</option>
+                    <option value="MAKE_NOTE">Fazer nota</option>
+                  </>
+                )}
+                {order.paymentStatus === 'MAKE_NOTE' && (
+                  <>
+                    <option value="PAID">Pago</option>
+                    <option value="TO_PAY">A pagar</option>
+                    <option value="NOTED">Anotado</option>
+                  </>
+                )}
+              </Select>
+            </div>
+          )}
           {updateOrderMutation.isError && <ErrorMessage error={updateOrderMutation.error} />}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setEditOrderOpen(false)}>Cancelar</Button>
@@ -550,7 +741,10 @@ function ItemActions({
         </Button>
       )}
       {item.status === 'RECEIVED' && (
-        <Button variant="ghost" size="sm" onClick={() => withPin(() => advanceMutation.mutate())} disabled={advanceMutation.isPending}>
+        <Button variant="ghost" size="sm" onClick={async () => {
+          if (!await confirm(`Marcar "${item.product}" como entregue? Esta ação não pode ser desfeita.`)) return
+          withPin(() => advanceMutation.mutate())
+        }} disabled={advanceMutation.isPending}>
           Marcar entregue
         </Button>
       )}

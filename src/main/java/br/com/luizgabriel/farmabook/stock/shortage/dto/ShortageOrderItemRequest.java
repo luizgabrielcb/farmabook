@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-public record ShortagePutRequest(
+public record ShortageOrderItemRequest(
         @NotBlank(message = "product is required")
         @Size(max = 150, message = "product must be at most 150 characters")
         String product,

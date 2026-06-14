@@ -81,6 +81,9 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
     },
   })
 
+  const anyItemHasPrice = items.some((i) => i.price.trim() !== '')
+  const hasTotalPrice = totalPrice.trim() !== ''
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!customer) return
@@ -117,7 +120,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                 <Plus size={12} /> Adicionar
               </Button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
               {items.map((item, i) => (
                 <div key={i} className="flex gap-2 items-start">
                   <Input
@@ -149,7 +152,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                     value={item.price}
                     onChange={(v) => updateItem(i, 'price', v)}
                     placeholder="Preço un."
-                    className="w-24"
+                    className={`w-24 ${hasTotalPrice ? 'opacity-40 pointer-events-none' : ''}`}
                   />
                   {items.length > 1 && (
                     <Button type="button" variant="ghost" size="sm"
@@ -177,10 +180,14 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
               />
             </div>
             <div className="w-36">
-              <label className="text-xs font-medium text-gray-700 block mb-1">
-                Total <span className="text-gray-400">(opcional)</span>
+              <label className={`text-xs font-medium block mb-1 ${anyItemHasPrice ? 'text-gray-300' : 'text-gray-700'}`}>
+                Total <span className="font-normal">(opcional)</span>
               </label>
-              <PriceInput value={totalPrice} onChange={setTotalPrice} />
+              <PriceInput
+                value={totalPrice}
+                onChange={setTotalPrice}
+                className={anyItemHasPrice ? 'opacity-40 pointer-events-none' : ''}
+              />
             </div>
           </div>
 

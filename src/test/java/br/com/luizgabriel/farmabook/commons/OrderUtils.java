@@ -91,7 +91,7 @@ public class OrderUtils {
     }
 
     public OrderPutRequest newOrderPutRequest() {
-        return new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null, null);
+        return new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null, null, null);
     }
 
     public OrderPostResponse newOrderPostResponse(Order order) {

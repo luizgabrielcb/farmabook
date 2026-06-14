@@ -12,9 +12,10 @@ import type { Distributor } from '@/types'
 interface Props {
   value: Distributor | null
   onChange: (d: Distributor | null) => void
+  allowCreate?: boolean
 }
 
-export function DistributorSearch({ value, onChange }: Props) {
+export function DistributorSearch({ value, onChange, allowCreate = true }: Props) {
   const [query, setQuery] = useState(value?.name ?? '')
   const [open, setOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
@@ -107,9 +108,11 @@ export function DistributorSearch({ value, onChange }: Props) {
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-sm text-gray-400 flex items-center gap-2">
                 Nenhuma distribuidora encontrada.
-                <Button type="button" variant="ghost" size="sm" className="text-blue-600" onClick={openQuickAdd}>
-                  <Plus size={12} /> Cadastrar
-                </Button>
+                {allowCreate && (
+                  <Button type="button" variant="ghost" size="sm" className="text-blue-600" onClick={openQuickAdd}>
+                    <Plus size={12} /> Cadastrar
+                  </Button>
+                )}
               </div>
             ) : (
               <>
@@ -123,13 +126,15 @@ export function DistributorSearch({ value, onChange }: Props) {
                     <span className="font-medium text-gray-900">{d.name}</span>
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={openQuickAdd}
-                  className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-100 flex items-center gap-1"
-                >
-                  <Plus size={12} /> Cadastrar nova distribuidora
-                </button>
+                {allowCreate && (
+                  <button
+                    type="button"
+                    onClick={openQuickAdd}
+                    className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-100 flex items-center gap-1"
+                  >
+                    <Plus size={12} /> Cadastrar nova distribuidora
+                  </button>
+                )}
               </>
             )}
           </div>

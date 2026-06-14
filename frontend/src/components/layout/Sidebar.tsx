@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { ShoppingCart, Users, UserCog, Package, Bell, FlaskConical } from 'lucide-react'
+import { ShoppingCart, Users, UserCog, Package, Bell, FlaskConical, Truck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/compoundings', label: 'Manipulações', icon: FlaskConical },
   { to: '/customers', label: 'Clientes', icon: Users },
   { to: '/shortages', label: 'Faltas', icon: Package },
+  { to: '/distributors', label: 'Distribuidoras', icon: Truck },
   { to: '/users', label: 'Usuários', icon: UserCog },
   { to: '/notifications', label: 'Notificações', icon: Bell },
 ]

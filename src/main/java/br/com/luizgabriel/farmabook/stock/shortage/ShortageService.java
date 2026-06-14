@@ -18,6 +18,7 @@ import java.util.UUID;
 public class ShortageService {
 
     private final ShortageRepository repository;
+    private final ShortageOrderRepository shortageOrderRepository;
     private final ShortageMapper mapper;
 
     @Transactional
@@ -51,6 +52,7 @@ public class ShortageService {
         shortage.setProduct(request.product());
         shortage.setCategory(request.category());
         shortage.setQuantity(request.quantity());
+        shortage.setCostPrice(request.costPrice());
 
         var updatedShortage = repository.save(shortage);
 
@@ -80,6 +82,27 @@ public class ShortageService {
         shortage.setOrderedAt(Instant.now());
 
         repository.save(shortage);
+
+        if (shortage.getShortageOrderId() != null) {
+            recalculateShortageOrderStatus(shortage.getShortageOrderId(), actor);
+        }
+    }
+
+    private void recalculateShortageOrderStatus(UUID shortageOrderId, User actor) {
+        var order = shortageOrderRepository.findById(shortageOrderId).orElse(null);
+        if (order == null || order.getStatus() == ShortageOrderStatus.ORDERED) return;
+
+        var allOrdered = repository.findAllByShortageOrderId(shortageOrderId)
+                .stream()
+                .allMatch(s -> s.getStatus() == ShortageStatus.ORDERED);
+
+        if (allOrdered) {
+            order.setStatus(ShortageOrderStatus.ORDERED);
+            order.setOrderedById(actor.getId());
+            order.setOrderedByName(actor.getName());
+            order.setOrderedAt(Instant.now());
+            shortageOrderRepository.save(order);
+        }
     }
 
     private Shortage findByIdOrThrowNotFound(UUID id) {
