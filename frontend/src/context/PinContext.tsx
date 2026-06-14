@@ -196,10 +196,10 @@ export function usePin() {
 export function useWithPin() {
   const { requestPin } = usePin()
   return useCallback(
-    async (action: () => void) => {
+    async (action: () => void | Promise<void>) => {
       try {
         await requestPin()
-        action()
+        await action()
       } catch {
         // usuário cancelou
       }

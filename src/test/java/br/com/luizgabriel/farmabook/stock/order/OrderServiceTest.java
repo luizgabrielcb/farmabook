@@ -7,6 +7,7 @@ import br.com.luizgabriel.farmabook.customer.Customer;
 import br.com.luizgabriel.farmabook.customer.CustomerService;
 import br.com.luizgabriel.farmabook.exception.ConflictException;
 import br.com.luizgabriel.farmabook.exception.NotFoundException;
+import br.com.luizgabriel.farmabook.stock.order.dto.OrderPutRequest;
 import br.com.luizgabriel.farmabook.notification.NotificationService;
 import br.com.luizgabriel.farmabook.stock.distributor.Distributor;
 import br.com.luizgabriel.farmabook.stock.distributor.DistributorService;
@@ -370,6 +371,52 @@ class OrderServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
+    @Test
+    @DisplayName("update should cascade payment status to eligible items and recalculate order payment status")
+    void update_CascadesPaymentStatusToEligibleItems_WhenSuccessful() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.TO_PAY);
+        var request = new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null, null, OrderPaymentStatus.PAID);
+        var newCustomer = Customer.builder()
+                .id(CustomerUtils.OTHER_CUSTOMER_ID)
+                .name("Other Customer")
+                .build();
+        var response = utils.newOrderPutResponse(order);
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(customerService.findByIdOrThrowNotFound(request.customerId())).thenReturn(newCustomer);
+        BDDMockito.when(mapper.toOrderPutResponse(order)).thenReturn(response);
+
+        service.update(order.getId(), request);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        assertThat(order.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+    }
+
+    @Test
+    @DisplayName("update should not change items that are ineligible for the target payment status")
+    void update_DoesNotChangeIneligibleItems_WhenCascadingPaymentStatus() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.PAID);
+        var request = new OrderPutRequest(CustomerUtils.OTHER_CUSTOMER_ID, null, null, OrderPaymentStatus.MAKE_NOTE);
+        var newCustomer = Customer.builder()
+                .id(CustomerUtils.OTHER_CUSTOMER_ID)
+                .name("Other Customer")
+                .build();
+        var response = utils.newOrderPutResponse(order);
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(customerService.findByIdOrThrowNotFound(request.customerId())).thenReturn(newCustomer);
+        BDDMockito.when(mapper.toOrderPutResponse(order)).thenReturn(response);
+
+        service.update(order.getId(), request);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        assertThat(order.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+    }
+
     // --- deleteItem ---
 
     @Test
@@ -383,6 +430,22 @@ class OrderServiceTest {
         service.deleteItem(order.getId(), item.getId());
 
         assertThat(order.getItems()).doesNotContain(item);
+    }
+
+    @Test
+    @DisplayName("deleteItem should reset order status to PENDING when the last item is deleted")
+    void deleteItem_ResetsStatusToPending_WhenLastItemDeleted() {
+        var order = utils.newOrderedOrder();
+        var item = order.getItems().getFirst();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(orderItemRepository.countActiveByOrderId(order.getId())).thenReturn(0L);
+
+        service.deleteItem(order.getId(), item.getId());
+
+        assertThat(order.getItems()).doesNotContain(item);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING);
+        BDDMockito.then(repository).should().save(order);
     }
 
     @Test

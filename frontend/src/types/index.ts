@@ -4,6 +4,7 @@ export type OrderItemStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
 export type OrderPaymentStatus = 'TO_PAY' | 'MAKE_NOTE' | 'PAID' | 'NOTED'
 export type ShortageStatus = 'PENDING' | 'ORDERED'
 export type ShortageType = 'WANIA' | 'FRANCISCO'
+export type ShortageOrderStatus = 'PENDING' | 'ORDERED'
 export type CompoundingStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
 export type PaymentStatus = 'TO_PAY' | 'PAID' | 'MAKE_NOTE' | 'NOTED'
 export type Category =
@@ -97,8 +98,43 @@ export interface Shortage {
   orderedById: string | null
   orderedByName: string | null
   orderedAt: string | null
+  shortageOrderId: string | null
+  costPrice: number | null
   createdAt: string
   updatedAt?: string
+}
+
+export interface ShortageOrderListItem {
+  id: string
+  shortageType: ShortageType
+  distributorId: string
+  distributorName: string
+  status: ShortageOrderStatus
+  createdById: string
+  createdByName: string
+  orderedById: string | null
+  orderedByName: string | null
+  orderedAt: string | null
+  observations: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ShortageOrder {
+  id: string
+  shortageType: ShortageType
+  distributorId: string
+  distributorName: string
+  status: ShortageOrderStatus
+  createdById: string
+  createdByName: string
+  orderedById: string | null
+  orderedByName: string | null
+  orderedAt: string | null
+  observations: string | null
+  shortages: Shortage[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Notification {

@@ -74,6 +74,11 @@ public class OrderService {
             order.getItems().forEach(item -> item.setPrice(null));
         }
 
+        if (request.paymentStatus() != null) {
+            cascadeOrderPaymentStatusToItems(order, request.paymentStatus());
+            recalculateOrderPaymentStatus(order);
+        }
+
         return mapper.toOrderPutResponse(order);
     }
 
@@ -137,6 +142,15 @@ public class OrderService {
         ensureItemMutable(item);
 
         order.getItems().remove(item);
+        repository.saveAndFlush(order);
+
+        long remaining = orderItemRepository.countActiveByOrderId(orderId);
+        if (remaining == 0) {
+            order.setStatus(OrderStatus.PENDING);
+            recalculateOrderPaymentStatus(order);
+            repository.save(order);
+            return;
+        }
 
         recalculateOrderStatus(order);
     }
@@ -313,6 +327,18 @@ public class OrderService {
         item.setDeliveredById(actor.getId());
         item.setDeliveredByName(actor.getName());
         item.setDeliveredAt(Instant.now());
+    }
+
+    private void cascadeOrderPaymentStatusToItems(Order order, OrderPaymentStatus target) {
+        for (var item : order.getItems()) {
+            boolean eligible = switch (target) {
+                case PAID -> item.getPaymentStatus() == OrderPaymentStatus.TO_PAY || item.getPaymentStatus() == OrderPaymentStatus.MAKE_NOTE;
+                case MAKE_NOTE -> item.getPaymentStatus() == OrderPaymentStatus.TO_PAY;
+                case NOTED -> item.getPaymentStatus() == OrderPaymentStatus.MAKE_NOTE;
+                case TO_PAY -> item.getPaymentStatus() == OrderPaymentStatus.MAKE_NOTE;
+            };
+            if (eligible) item.setPaymentStatus(target);
+        }
     }
 
     private void recalculateOrderPaymentStatus(Order order) {

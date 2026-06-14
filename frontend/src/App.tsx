@@ -4,6 +4,8 @@ import { OrdersPage } from '@/pages/orders/OrdersPage'
 import { OrderDetailPage } from '@/pages/orders/OrderDetailPage'
 import { CustomersPage } from '@/pages/customers/CustomersPage'
 import { ShortagesPage } from '@/pages/shortages/ShortagesPage'
+import { ShortageOrderDetailPage } from '@/pages/shortages/ShortageOrderDetailPage'
+import { DistributorsPage } from '@/pages/distributors/DistributorsPage'
 import { UsersPage } from '@/pages/users/UsersPage'
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage'
 import { CompoundingsPage } from '@/pages/compoundings/CompoundingsPage'
@@ -18,6 +20,8 @@ export default function App() {
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/shortages" element={<ShortagesPage />} />
+        <Route path="/shortage-orders/:id" element={<ShortageOrderDetailPage />} />
+        <Route path="/distributors" element={<DistributorsPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/compoundings" element={<CompoundingsPage />} />

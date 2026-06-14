@@ -19,6 +19,8 @@ public interface ShortageMapper {
     @Mapping(target = "orderedByName", ignore = true)
     @Mapping(target = "orderedAt", ignore = true)
     @Mapping(target = "shortageType", source = "request.shortageType")
+    @Mapping(target = "shortageOrderId", ignore = true)
+    @Mapping(target = "costPrice", ignore = true)
     Shortage toShortage(ShortagePostRequest request, User createdBy);
 
     ShortagePostResponse toShortagePostResponse(Shortage shortage);

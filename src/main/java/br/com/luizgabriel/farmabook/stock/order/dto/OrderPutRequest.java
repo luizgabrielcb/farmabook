@@ -1,5 +1,6 @@
 package br.com.luizgabriel.farmabook.stock.order.dto;
 
+import br.com.luizgabriel.farmabook.stock.order.OrderPaymentStatus;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -14,6 +15,8 @@ public record OrderPutRequest(
         @DecimalMin(value = "0.0", message = "totalPrice must be non-negative")
         @DecimalMax(value = "100000.00", message = "totalPrice must be at most 100000")
         @Digits(integer = 6, fraction = 2, message = "totalPrice must have at most 2 decimal places")
-        BigDecimal totalPrice
+        BigDecimal totalPrice,
+
+        OrderPaymentStatus paymentStatus
 ) {
 }

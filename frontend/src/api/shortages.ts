@@ -1,10 +1,18 @@
 import { api } from '@/lib/api'
 import type { Shortage, Page, Category, ShortageType } from '@/types'
 
-interface ShortageInput {
+interface ShortageCreateInput {
   product: string
   category: Category
   quantity: number | null
+  shortageType: ShortageType
+}
+
+interface ShortageUpdateInput {
+  product: string
+  category: Category
+  quantity: number | null
+  costPrice: number | null
   shortageType: ShortageType
 }
 
@@ -20,12 +28,12 @@ export async function getShortage(id: string): Promise<Shortage> {
   return data
 }
 
-export async function createShortage(body: ShortageInput): Promise<Shortage> {
+export async function createShortage(body: ShortageCreateInput): Promise<Shortage> {
   const { data } = await api.post<Shortage>('/shortages', body)
   return data
 }
 
-export async function updateShortage(id: string, body: ShortageInput): Promise<Shortage> {
+export async function updateShortage(id: string, body: ShortageUpdateInput): Promise<Shortage> {
   const { data } = await api.put<Shortage>(`/shortages/${id}`, body)
   return data
 }

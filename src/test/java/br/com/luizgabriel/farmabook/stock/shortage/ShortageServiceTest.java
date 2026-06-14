@@ -1,5 +1,6 @@
 package br.com.luizgabriel.farmabook.stock.shortage;
 
+import br.com.luizgabriel.farmabook.commons.ShortageOrderUtils;
 import br.com.luizgabriel.farmabook.commons.ShortageUtils;
 import br.com.luizgabriel.farmabook.commons.UserUtils;
 import br.com.luizgabriel.farmabook.exception.ConflictException;
@@ -38,6 +39,9 @@ class ShortageServiceTest {
 
     @Mock
     private ShortageRepository repository;
+
+    @Mock
+    private ShortageOrderRepository shortageOrderRepository;
 
     @Mock
     private ShortageMapper mapper;
@@ -240,5 +244,49 @@ class ShortageServiceTest {
                 .isInstanceOf(ConflictException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
+    }
+
+    @Test
+    @DisplayName("markAsOrdered should set shortage order status to ORDERED when all shortages in the order are ordered")
+    void markAsOrdered_SetsShortageOrderStatusToOrdered_WhenAllShortagesInOrderAreOrdered() {
+        var shortageOrderId = ShortageOrderUtils.SHORTAGE_ORDER_ID;
+        var shortage = utils.newShortageWithOrderId(shortageOrderId);
+        var actor = userUtils.newUser();
+        var shortageOrder = new ShortageOrderUtils().newShortageOrder();
+        var orderedShortage = utils.newOrderedShortage();
+
+        BDDMockito.when(repository.findById(shortage.getId())).thenReturn(Optional.of(shortage));
+        BDDMockito.when(repository.save(shortage)).thenReturn(shortage);
+        BDDMockito.when(shortageOrderRepository.findById(shortageOrderId)).thenReturn(java.util.Optional.of(shortageOrder));
+        BDDMockito.when(repository.findAllByShortageOrderId(shortageOrderId)).thenReturn(List.of(orderedShortage));
+
+        service.markAsOrdered(shortage.getId(), actor);
+
+        assertThat(shortageOrder.getStatus()).isEqualTo(ShortageOrderStatus.ORDERED);
+        assertThat(shortageOrder.getOrderedById()).isEqualTo(actor.getId());
+        assertThat(shortageOrder.getOrderedByName()).isEqualTo(actor.getName());
+        assertThat(shortageOrder.getOrderedAt()).isNotNull();
+        BDDMockito.then(shortageOrderRepository).should().save(shortageOrder);
+    }
+
+    @Test
+    @DisplayName("markAsOrdered should not update shortage order status when some shortages in the order are still pending")
+    void markAsOrdered_DoesNotUpdateShortageOrderStatus_WhenSomeShortagesAreStillPending() {
+        var shortageOrderId = ShortageOrderUtils.SHORTAGE_ORDER_ID;
+        var shortage = utils.newShortageWithOrderId(shortageOrderId);
+        var actor = userUtils.newUser();
+        var shortageOrder = new ShortageOrderUtils().newShortageOrder();
+        var orderedShortage = utils.newOrderedShortage();
+        var pendingShortage = utils.newShortage();
+
+        BDDMockito.when(repository.findById(shortage.getId())).thenReturn(Optional.of(shortage));
+        BDDMockito.when(repository.save(shortage)).thenReturn(shortage);
+        BDDMockito.when(shortageOrderRepository.findById(shortageOrderId)).thenReturn(java.util.Optional.of(shortageOrder));
+        BDDMockito.when(repository.findAllByShortageOrderId(shortageOrderId)).thenReturn(List.of(orderedShortage, pendingShortage));
+
+        service.markAsOrdered(shortage.getId(), actor);
+
+        assertThat(shortageOrder.getStatus()).isEqualTo(ShortageOrderStatus.PENDING);
+        BDDMockito.then(shortageOrderRepository).should(Mockito.never()).save(ArgumentMatchers.any(ShortageOrder.class));
     }
 }
