@@ -1,0 +1,12 @@
+{
+  "customerId": "00000000-0000-0000-0000-000000000001",
+  "items": [
+    {
+      "product": "Dipirona 500mg",
+      "quantity": 2,
+      "batch": "LOTE-001",
+      "expiry": "12/2025"
+    }
+  ],
+  "observations": "Receita de teste"
+}
