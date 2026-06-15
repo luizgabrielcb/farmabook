@@ -355,8 +355,12 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
             <label className="text-xs font-medium text-gray-700 block mb-1">
               Quantidade <span className="text-gray-400">(opcional)</span>
             </label>
-            <Input type="number" min={1} value={form.quantity}
-              onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))}
+            <Input type="number" min={1} max={999} step={1} value={form.quantity}
+              onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '')
+                setForm((p) => ({ ...p, quantity: val ? String(Math.min(parseInt(val, 10), 999)) : '' }))
+              }}
               placeholder="—" />
           </div>
           {saveMutation.isError && <ErrorMessage error={saveMutation.error} />}

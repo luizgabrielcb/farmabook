@@ -143,7 +143,10 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                     step={1}
                     value={item.quantity}
                     onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
-                    onChange={(e) => updateItem(i, 'quantity', e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '')
+                      updateItem(i, 'quantity', val ? String(Math.min(parseInt(val, 10), 1000)) : '')
+                    }}
                     placeholder="Qtd"
                     className="w-16"
                     required

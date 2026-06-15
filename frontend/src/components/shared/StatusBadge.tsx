@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import type { OrderStatus, OrderItemStatus, ShortageStatus, ShortageOrderStatus, CompoundingStatus, PaymentStatus, OrderPaymentStatus } from '@/types'
+import type { OrderStatus, OrderItemStatus, ShortageStatus, ShortageOrderStatus, CompoundingStatus, PaymentStatus, OrderPaymentStatus, PrescriptionStatus, PrescriptionItemStatus } from '@/types'
 
 const orderStatusMap: Record<OrderStatus, { label: string; variant: 'gray' | 'blue' | 'yellow' | 'green' | 'red' | 'purple' }> = {
   PENDING: { label: 'Pendente', variant: 'gray' },
@@ -61,5 +61,25 @@ const orderPaymentStatusMap: Record<OrderPaymentStatus, { label: string; variant
 
 export function OrderPaymentStatusBadge({ status }: { status: OrderPaymentStatus }) {
   const map = orderPaymentStatusMap[status]
+  return <Badge variant={map.variant}>{map.label}</Badge>
+}
+
+const prescriptionStatusMap: Record<PrescriptionStatus, { label: string; variant: 'gray' | 'green' }> = {
+  PENDING: { label: 'Pendente', variant: 'gray' },
+  FINISHED: { label: 'Finalizado', variant: 'green' },
+}
+
+export function PrescriptionStatusBadge({ status }: { status: PrescriptionStatus }) {
+  const map = prescriptionStatusMap[status]
+  return <Badge variant={map.variant}>{map.label}</Badge>
+}
+
+const prescriptionItemStatusMap: Record<PrescriptionItemStatus, { label: string; variant: 'gray' | 'green' }> = {
+  PENDING: { label: 'Pendente', variant: 'gray' },
+  RECEIVED: { label: 'Recebido', variant: 'green' },
+}
+
+export function PrescriptionItemStatusBadge({ status }: { status: PrescriptionItemStatus }) {
+  const map = prescriptionItemStatusMap[status]
   return <Badge variant={map.variant}>{map.label}</Badge>
 }

@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { ShoppingCart, Users, UserCog, Package, Bell, FlaskConical, Truck } from 'lucide-react'
+import { ShoppingCart, Users, UserCog, Package, Bell, Truck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { to: '/orders', label: 'Encomendas', icon: ShoppingCart },
-  { to: '/compoundings', label: 'Manipulações', icon: FlaskConical },
-  { to: '/customers', label: 'Clientes', icon: Users },
-  { to: '/shortages', label: 'Faltas', icon: Package },
+  { to: '/orders', label: 'Encomendas', icon: ShoppingCart, shortcut: 'F3' },
+  { to: '/customers', label: 'Clientes', icon: Users, shortcut: 'F4' },
+  { to: '/shortages', label: 'Faltas', icon: Package, shortcut: 'F2' },
   { to: '/distributors', label: 'Distribuidoras', icon: Truck },
   { to: '/users', label: 'Usuários', icon: UserCog },
   { to: '/notifications', label: 'Notificações', icon: Bell },
@@ -20,7 +19,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 px-2 py-3 space-y-0.5">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {navItems.map(({ to, label, icon: Icon, shortcut }) => (
           <NavLink
             key={to}
             to={to}
@@ -34,7 +33,10 @@ export function Sidebar() {
             }
           >
             <Icon size={15} />
-            {label}
+            <span className="flex-1">{label}</span>
+            {shortcut && (
+              <span className="text-[10px] text-gray-400 font-mono">{shortcut}</span>
+            )}
           </NavLink>
         ))}
       </nav>
