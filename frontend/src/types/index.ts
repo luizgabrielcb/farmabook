@@ -1,4 +1,6 @@
 export type UserRole = 'ADMIN' | 'SELLER'
+export type PrescriptionStatus = 'PENDING' | 'FINISHED'
+export type PrescriptionItemStatus = 'PENDING' | 'RECEIVED'
 export type OrderStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
 export type OrderItemStatus = 'PENDING' | 'ORDERED' | 'RECEIVED' | 'DELIVERED'
 export type OrderPaymentStatus = 'TO_PAY' | 'MAKE_NOTE' | 'PAID' | 'NOTED'
@@ -133,6 +135,33 @@ export interface ShortageOrder {
   orderedAt: string | null
   observations: string | null
   shortages: Shortage[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PrescriptionItem {
+  id: string
+  product: string
+  quantity: number
+  batch: string
+  expiry: string
+  status: PrescriptionItemStatus
+  receivedById: string | null
+  receivedByName: string | null
+  receivedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Prescription {
+  id: string
+  customerId: string
+  customerName: string
+  status: PrescriptionStatus
+  createdById: string
+  createdByName: string
+  observations: string | null
+  items: PrescriptionItem[]
   createdAt: string
   updatedAt: string
 }

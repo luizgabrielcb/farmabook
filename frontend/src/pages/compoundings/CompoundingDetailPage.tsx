@@ -290,8 +290,12 @@ function EditCompoundingDialog({ open, onClose, onSuccess, compounding }: EditPr
         </div>
         <div>
           <label className="text-xs font-medium text-gray-700 block mb-1">Quantidade</label>
-          <Input type="number" min={1} value={quantity}
-            onChange={(e) => setQuantity(e.target.value)} required autoComplete="off" />
+          <Input type="number" min={1} max={999} step={1} value={quantity}
+            onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, '')
+              setQuantity(val ? String(Math.min(parseInt(val, 10), 999)) : '')
+            }} required autoComplete="off" />
         </div>
         <div>
           <label className="text-xs font-medium text-gray-700 block mb-1">

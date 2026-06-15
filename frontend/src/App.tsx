@@ -11,6 +11,8 @@ import { NotificationsPage } from '@/pages/notifications/NotificationsPage'
 import { CompoundingsPage } from '@/pages/compoundings/CompoundingsPage'
 import { CompoundingDetailPage } from '@/pages/compoundings/CompoundingDetailPage'
 import { CompoundingPharmaciesPage } from '@/pages/compounding-pharmacies/CompoundingPharmaciesPage'
+import { PrescriptionsPage } from '@/pages/prescriptions/PrescriptionsPage'
+import { PrescriptionDetailPage } from '@/pages/prescriptions/PrescriptionDetailPage'
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
         <Route path="/compoundings" element={<CompoundingsPage />} />
         <Route path="/compoundings/:id" element={<CompoundingDetailPage />} />
         <Route path="/compounding-pharmacies" element={<CompoundingPharmaciesPage />} />
+        <Route path="/prescriptions" element={<PrescriptionsPage />} />
+        <Route path="/prescriptions/:id" element={<PrescriptionDetailPage />} />
         <Route path="*" element={<Navigate to="/orders" replace />} />
       </Routes>
     </AppLayout>

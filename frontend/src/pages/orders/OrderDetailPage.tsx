@@ -524,7 +524,10 @@ export function OrderDetailPage() {
               step={1}
               value={itemForm.quantity}
               onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
-              onChange={(e) => setItemForm((p) => ({ ...p, quantity: e.target.value }))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '')
+                setItemForm((p) => ({ ...p, quantity: val ? String(Math.min(parseInt(val, 10), 1000)) : '' }))
+              }}
               required
             />
           </div>

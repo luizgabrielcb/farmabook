@@ -404,8 +404,12 @@ export function ShortageOrderDetailPage() {
                 <label className="text-xs font-medium text-gray-700 block mb-1">
                   Quantidade <span className="text-gray-400 font-normal">(opcional)</span>
                 </label>
-                <Input type="number" min={1} value={editForm.quantity}
-                  onChange={(e) => setEditForm((p) => p && { ...p, quantity: e.target.value })}
+                <Input type="number" min={1} max={999} step={1} value={editForm.quantity}
+                  onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '')
+                    setEditForm((p) => p && { ...p, quantity: val ? String(Math.min(parseInt(val, 10), 999)) : '' })
+                  }}
                   placeholder="—" />
               </div>
               <div className="flex-1">

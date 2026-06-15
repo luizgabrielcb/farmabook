@@ -142,8 +142,14 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
                     <Input
                       type="number"
                       min={1}
+                      max={999}
+                      step={1}
                       value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', e.target.value)}
+                      onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '')
+                        updateItem(index, 'quantity', val ? String(Math.min(parseInt(val, 10), 999)) : '')
+                      }}
                       placeholder="Qtd (opc.)"
                       className="w-28"
                     />
