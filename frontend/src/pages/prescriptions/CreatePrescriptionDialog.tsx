@@ -146,7 +146,8 @@ export function CreatePrescriptionDialog({ open, onClose, onSuccess }: Props) {
                       onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '')
-                        updateItem(i, 'quantity', val ? String(Math.min(parseInt(val, 10), 999)) : '')
+                        if (val && parseInt(val, 10) > 999) return
+                        updateItem(i, 'quantity', val)
                       }}
                       placeholder="Qtd"
                       className="w-16"

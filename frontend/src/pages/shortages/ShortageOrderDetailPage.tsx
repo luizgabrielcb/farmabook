@@ -16,6 +16,7 @@ import { CategoryBadge, CATEGORY_OPTIONS } from '@/components/shared/CategoryBad
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { PriceInput, parsePriceInput } from '@/components/shared/PriceInput'
 import { DistributorSearch } from '@/components/shared/DistributorSearch'
+import { AuditButton } from '@/components/shared/AuditButton'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
 import { formatDate } from '@/lib/utils'
@@ -234,16 +235,16 @@ export function ShortageOrderDetailPage() {
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-200">
             <span className="text-sm font-medium text-gray-900">
-              Produtos em falta ({order.shortages.length})
+              Itens em falta ({order.shortages.length})
             </span>
           </div>
 
           {someSelected && (
-            <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm">
-              <button onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:text-blue-700 cursor-pointer">
+            <div className="flex items-center gap-3 px-4 py-2 bg-brand-50 border-b border-brand-100 text-sm">
+              <button onClick={() => setSelectedIds(new Set())} className="text-brand-500 hover:text-brand-700 cursor-pointer">
                 <X size={14} />
               </button>
-              <span className="text-blue-700 font-medium">{selectedIds.size} selecionado(s)</span>
+              <span className="text-brand-700 font-medium">{selectedIds.size} selecionado(s)</span>
               <div className="flex items-center gap-2 ml-2">
                 <Button variant="secondary" size="sm" onClick={bulkMarkOrdered}>Marcar como pedido</Button>
                 <Button variant="danger" size="sm" onClick={bulkDeleteShortages}>
@@ -269,12 +270,11 @@ export function ShortageOrderDetailPage() {
                     />
                   </Th>
                 )}
-                <Th>Produto</Th>
+                <Th>Item</Th>
                 <Th>Categoria</Th>
                 <Th>Qtd.</Th>
                 <Th>Preço custo</Th>
                 <Th>Status</Th>
-                <Th>Pedido por</Th>
                 <Th>Data</Th>
                 <Th />
               </tr>
@@ -282,7 +282,7 @@ export function ShortageOrderDetailPage() {
             <TableBody>
               {order.shortages.length === 0 && (
                 <tr>
-                  <Td colSpan={isPending ? 9 : 8} className="text-center text-gray-400 py-8">Nenhum produto neste pedido.</Td>
+                  <Td colSpan={isPending ? 8 : 7} className="text-center text-gray-400 py-8">Nenhum item neste pedido.</Td>
                 </tr>
               )}
               {order.shortages.map((s) => (
@@ -303,37 +303,42 @@ export function ShortageOrderDetailPage() {
                       )}
                     </Td>
                   )}
-                  <Td>
-                    <span className="font-medium text-gray-900 block max-w-[160px] truncate" title={s.product}>
+                  <Td className="max-w-[240px] whitespace-normal">
+                    <span className="font-medium text-gray-900 break-words">
                       {s.product}
                     </span>
                   </Td>
                   <Td><CategoryBadge category={s.category} /></Td>
                   <Td>{s.quantity ?? '—'}</Td>
-                  <Td className="text-gray-500">
+                  <Td className="text-gray-500 font-mono">
                     {s.costPrice != null ? currencyFmt.format(s.costPrice) : '—'}
                   </Td>
                   <Td><ShortageStatusBadge status={s.status} /></Td>
-                  <Td className="text-gray-500">{s.orderedByName ?? '—'}</Td>
                   <Td className="text-gray-500">{formatDate(s.createdAt)}</Td>
                   <Td>
-                    {s.status === 'PENDING' && (
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700"
-                          onClick={() => handleMarkShortageOrdered(s)}
-                          disabled={markShortageOrderedMutation.isPending}>
-                          <CheckCircle size={12} /> Pedido
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
-                          <Pencil size={12} />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
-                          onClick={() => handleDeleteShortage(s)}
-                          disabled={deleteShortageMutation.isPending}>
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1 justify-end whitespace-nowrap">
+                      {s.status === 'PENDING' && (
+                        <>
+                          <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700"
+                            onClick={() => handleMarkShortageOrdered(s)}
+                            disabled={markShortageOrderedMutation.isPending}>
+                            <CheckCircle size={12} /> Pedido
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
+                            <Pencil size={12} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
+                            onClick={() => handleDeleteShortage(s)}
+                            disabled={deleteShortageMutation.isPending}>
+                            <Trash2 size={12} />
+                          </Button>
+                        </>
+                      )}
+                      <AuditButton rows={[
+                        { label: 'Registrado', value: `${s.createdByName} · ${formatDate(s.createdAt)}` },
+                        { label: 'Pedido', value: s.orderedByName ? `${s.orderedByName} · ${formatDate(s.orderedAt)}` : '—' },
+                      ]} />
+                    </div>
                   </Td>
                 </Tr>
               ))}
@@ -387,7 +392,7 @@ export function ShortageOrderDetailPage() {
             className="space-y-3"
           >
             <div>
-              <label className="text-xs font-medium text-gray-700 block mb-1">Produto</label>
+              <label className="text-xs font-medium text-gray-700 block mb-1">Item</label>
               <Input value={editForm.product}
                 onChange={(e) => setEditForm((p) => p && { ...p, product: e.target.value })}
                 maxLength={150} required autoFocus autoComplete="off" />
@@ -408,7 +413,8 @@ export function ShortageOrderDetailPage() {
                   onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '')
-                    setEditForm((p) => p && { ...p, quantity: val ? String(Math.min(parseInt(val, 10), 999)) : '' })
+                    if (val && parseInt(val, 10) > 999) return
+                    setEditForm((p) => p && { ...p, quantity: val })
                   }}
                   placeholder="—" />
               </div>

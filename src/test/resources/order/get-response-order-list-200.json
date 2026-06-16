@@ -5,6 +5,9 @@
       "status": "PENDING",
       "notifiedAt": null,
       "createdByName": "User Teste",
+      "observations": null,
+      "paymentStatus": "TO_PAY",
+      "totalPrice": null,
       "items": [
         {
           "product": "Dipirona 500mg",
@@ -19,7 +22,14 @@
           "receivedAt": null,
           "deliveredById": null,
           "deliveredByName": null,
-          "deliveredAt": null
+          "deliveredAt": null,
+          "distributorId": null,
+          "distributorName": null,
+          "price": null,
+          "paymentStatus": "TO_PAY",
+          "paymentChangedById": null,
+          "paymentChangedByName": null,
+          "paymentChangedAt": null
         }
       ]
     }

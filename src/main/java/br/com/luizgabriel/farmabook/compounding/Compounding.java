@@ -95,4 +95,13 @@ public class Compounding extends Auditable {
 
     @Column(name = "delivered_at")
     private Instant deliveredAt;
+
+    @Column(name = "payment_changed_by_id", columnDefinition = "uuid")
+    private UUID paymentChangedById;
+
+    @Column(name = "payment_changed_by_name", length = 100)
+    private String paymentChangedByName;
+
+    @Column(name = "payment_changed_at")
+    private Instant paymentChangedAt;
 }

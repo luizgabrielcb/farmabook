@@ -22,7 +22,7 @@ public interface CompoundingMapper {
     @Mapping(target = "value", source = "request.value")
     @Mapping(target = "observations", source = "request.observations")
     @Mapping(target = "status", constant = "PENDING")
-    @Mapping(target = "paymentStatus", constant = "TO_PAY")
+    @Mapping(target = "paymentStatus", expression = "java(request.paymentStatus() != null ? request.paymentStatus() : br.com.luizgabriel.farmabook.compounding.PaymentStatus.TO_PAY)")
     @Mapping(target = "notifiedAt", ignore = true)
     @Mapping(target = "createdById", source = "actor.id")
     @Mapping(target = "createdByName", source = "actor.name")
@@ -35,6 +35,9 @@ public interface CompoundingMapper {
     @Mapping(target = "deliveredById", ignore = true)
     @Mapping(target = "deliveredByName", ignore = true)
     @Mapping(target = "deliveredAt", ignore = true)
+    @Mapping(target = "paymentChangedById", ignore = true)
+    @Mapping(target = "paymentChangedByName", ignore = true)
+    @Mapping(target = "paymentChangedAt", ignore = true)
     Compounding toCompounding(CompoundingPostRequest request, Customer customer, CompoundingPharmacy pharmacy, User actor);
 
     CompoundingPostResponse toCompoundingPostResponse(Compounding compounding);

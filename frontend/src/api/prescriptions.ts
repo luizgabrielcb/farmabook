@@ -21,7 +21,7 @@ export async function getPrescription(id: string): Promise<Prescription> {
 }
 
 export async function createPrescription(body: {
-  customerId: string
+  customerId?: string | null
   items: PrescriptionItemInput[]
   observations?: string | null
 }): Promise<Prescription> {
@@ -31,7 +31,7 @@ export async function createPrescription(body: {
 
 export async function updatePrescription(
   id: string,
-  body: { customerId: string; observations?: string | null },
+  body: { customerId?: string | null; observations?: string | null },
 ): Promise<Prescription> {
   const { data } = await api.put<Prescription>(`/prescriptions/${id}`, body)
   return data

@@ -52,6 +52,7 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
                         "content[*].orderedAt", "content[*].receivedById", "content[*].receivedByName",
                         "content[*].receivedAt", "content[*].deliveredById", "content[*].deliveredByName",
                         "content[*].deliveredAt", "content[*].value", "content[*].observations",
+                        "content[*].paymentChangedById", "content[*].paymentChangedByName", "content[*].paymentChangedAt",
                         "pageable", "last", "first", "size", "number", "sort", "numberOfElements", "empty")
                 .isEqualTo(expected);
     }
@@ -76,7 +77,8 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
                 .whenIgnoringPaths("id", "customerId", "pharmacyId", "createdById", "createdAt", "updatedAt",
                         "notifiedAt", "orderedById", "orderedByName", "orderedAt",
                         "receivedById", "receivedByName", "receivedAt",
-                        "deliveredById", "deliveredByName", "deliveredAt")
+                        "deliveredById", "deliveredByName", "deliveredAt",
+                        "paymentChangedById", "paymentChangedByName", "paymentChangedAt")
                 .isEqualTo(expected);
     }
 

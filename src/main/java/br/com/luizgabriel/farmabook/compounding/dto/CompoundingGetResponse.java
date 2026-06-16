@@ -31,6 +31,9 @@ public record CompoundingGetResponse(
         UUID deliveredById,
         String deliveredByName,
         Instant deliveredAt,
+        UUID paymentChangedById,
+        String paymentChangedByName,
+        Instant paymentChangedAt,
         Instant createdAt,
         Instant updatedAt
 ) {

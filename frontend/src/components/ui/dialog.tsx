@@ -34,15 +34,21 @@ export function Dialog({ open, onOpenChange, title, description, children, class
     >
       {/* backdrop */}
       <div
-        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(20,26,32,0.45)',
+          backdropFilter: 'blur(2px)',
+        }}
         onClick={() => !pinState.open && onOpenChange(false)}
       />
       {/* conteúdo */}
       <div
         className={cn(
-          'relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6 focus:outline-none',
+          'relative bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(20,26,32,0.18)] border border-gray-150 w-full max-w-md p-6 focus:outline-none',
           className,
         )}
+        style={{ animation: 'fb-dialog-in 180ms cubic-bezier(0.22,1,0.36,1)' }}
       >
         <div className="flex items-start justify-between mb-4">
           <div>

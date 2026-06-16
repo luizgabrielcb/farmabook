@@ -49,6 +49,12 @@ public class CompoundingService {
 
         var compounding = mapper.toCompounding(request, customer, pharmacy, actor);
 
+        if (request.paymentStatus() != null) {
+            compounding.setPaymentChangedById(actor.getId());
+            compounding.setPaymentChangedByName(actor.getName());
+            compounding.setPaymentChangedAt(Instant.now());
+        }
+
         var saved = repository.save(compounding);
 
         return mapper.toCompoundingPostResponse(saved);
@@ -162,7 +168,7 @@ public class CompoundingService {
     }
 
     @Transactional
-    public void markAsPaid(UUID id) {
+    public void markAsPaid(UUID id, User actor) {
         var compounding = findByIdOrThrowNotFound(id);
 
         if (compounding.getPaymentStatus() == PaymentStatus.NOTED) {
@@ -171,12 +177,13 @@ public class CompoundingService {
         }
 
         compounding.setPaymentStatus(PaymentStatus.PAID);
+        stampPaymentChange(compounding, actor);
 
         repository.save(compounding);
     }
 
     @Transactional
-    public void markAsToPay(UUID id) {
+    public void markAsToPay(UUID id, User actor) {
         var compounding = findByIdOrThrowNotFound(id);
 
         if (compounding.getPaymentStatus() != PaymentStatus.MAKE_NOTE) {
@@ -185,12 +192,13 @@ public class CompoundingService {
         }
 
         compounding.setPaymentStatus(PaymentStatus.TO_PAY);
+        stampPaymentChange(compounding, actor);
 
         repository.save(compounding);
     }
 
     @Transactional
-    public void markAsMakeNote(UUID id) {
+    public void markAsMakeNote(UUID id, User actor) {
         var compounding = findByIdOrThrowNotFound(id);
 
         if (compounding.getPaymentStatus() == PaymentStatus.PAID) {
@@ -204,12 +212,13 @@ public class CompoundingService {
         }
 
         compounding.setPaymentStatus(PaymentStatus.MAKE_NOTE);
+        stampPaymentChange(compounding, actor);
 
         repository.save(compounding);
     }
 
     @Transactional
-    public void markAsNoted(UUID id) {
+    public void markAsNoted(UUID id, User actor) {
         var compounding = findByIdOrThrowNotFound(id);
 
         if (compounding.getPaymentStatus() != PaymentStatus.MAKE_NOTE) {
@@ -218,8 +227,15 @@ public class CompoundingService {
         }
 
         compounding.setPaymentStatus(PaymentStatus.NOTED);
+        stampPaymentChange(compounding, actor);
 
         repository.save(compounding);
+    }
+
+    private void stampPaymentChange(Compounding compounding, User actor) {
+        compounding.setPaymentChangedById(actor.getId());
+        compounding.setPaymentChangedByName(actor.getName());
+        compounding.setPaymentChangedAt(Instant.now());
     }
 
     private Compounding findByIdOrThrowNotFound(UUID id) {

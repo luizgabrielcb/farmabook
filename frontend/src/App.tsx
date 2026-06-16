@@ -7,7 +7,6 @@ import { ShortagesPage } from '@/pages/shortages/ShortagesPage'
 import { ShortageOrderDetailPage } from '@/pages/shortages/ShortageOrderDetailPage'
 import { DistributorsPage } from '@/pages/distributors/DistributorsPage'
 import { UsersPage } from '@/pages/users/UsersPage'
-import { NotificationsPage } from '@/pages/notifications/NotificationsPage'
 import { CompoundingsPage } from '@/pages/compoundings/CompoundingsPage'
 import { CompoundingDetailPage } from '@/pages/compoundings/CompoundingDetailPage'
 import { CompoundingPharmaciesPage } from '@/pages/compounding-pharmacies/CompoundingPharmaciesPage'
@@ -25,7 +24,6 @@ export default function App() {
         <Route path="/shortage-orders/:id" element={<ShortageOrderDetailPage />} />
         <Route path="/distributors" element={<DistributorsPage />} />
         <Route path="/users" element={<UsersPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/compoundings" element={<CompoundingsPage />} />
         <Route path="/compoundings/:id" element={<CompoundingDetailPage />} />
         <Route path="/compounding-pharmacies" element={<CompoundingPharmaciesPage />} />

@@ -33,6 +33,10 @@ public record OrderItemGetResponse(
         UUID distributorId,
         String distributorName,
         BigDecimal price,
-        OrderPaymentStatus paymentStatus
+        OrderPaymentStatus paymentStatus,
+
+        UUID paymentChangedById,
+        String paymentChangedByName,
+        Instant paymentChangedAt
 ) {
 }

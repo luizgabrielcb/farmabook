@@ -122,7 +122,8 @@ public class CompoundingUtils {
                 CustomerUtils.CUSTOMER_ID,
                 CompoundingPharmacyUtils.PHARMACY_ID,
                 new BigDecimal("150.00"),
-                "Sem observações"
+                "Sem observações",
+                null
         );
     }
 
@@ -173,6 +174,9 @@ public class CompoundingUtils {
                 compounding.getDeliveredById(),
                 compounding.getDeliveredByName(),
                 compounding.getDeliveredAt(),
+                compounding.getPaymentChangedById(),
+                compounding.getPaymentChangedByName(),
+                compounding.getPaymentChangedAt(),
                 Instant.now(),
                 Instant.now()
         );

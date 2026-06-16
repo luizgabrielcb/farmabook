@@ -1,5 +1,6 @@
 package br.com.luizgabriel.farmabook.compounding.dto;
 
+import br.com.luizgabriel.farmabook.compounding.PaymentStatus;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -27,6 +28,8 @@ public record CompoundingPostRequest(
         BigDecimal value,
 
         @Size(max = 500, message = "observations must be at most 500 characters")
-        String observations
+        String observations,
+
+        PaymentStatus paymentStatus
 ) {
 }

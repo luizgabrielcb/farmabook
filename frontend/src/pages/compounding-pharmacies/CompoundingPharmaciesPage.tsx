@@ -69,8 +69,8 @@ export function CompoundingPharmaciesPage() {
         title="Farmácias de Manipulação"
         description="Farmácias fornecedoras de manipulações"
         actions={
-          <Button variant="primary" size="sm" onClick={openCreate}>
-            <Plus size={13} /> Nova farmácia
+          <Button variant="primary" size="md" className="px-4" onClick={openCreate}>
+            <Plus size={15} /> Nova farmácia
           </Button>
         }
       />

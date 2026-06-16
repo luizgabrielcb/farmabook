@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '@/context/ToastContext'
 import { Search, X, Plus } from 'lucide-react'
 import { listOrders } from '@/api/orders'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -25,18 +26,12 @@ const STATUS_OPTIONS: { value: OrderStatus | 'ALL'; label: string }[] = [
 const PAGE_SIZE = 20
 
 export function OrdersPage() {
-  return (
-    <div>
-      <PageHeader title="Encomendas" description="Gerencie as encomendas de clientes" />
-      <div className="p-6">
-        <OrdersList />
-      </div>
-    </div>
-  )
+  return <OrdersList />
 }
 
 function OrdersList() {
   const navigate = useNavigate()
+  const toast = useToast()
   const [createOpen, setCreateOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL')
   const [customerQuery, setCustomerQuery] = useState('')
@@ -75,13 +70,17 @@ function OrdersList() {
 
   return (
     <div>
-      <div className="flex justify-end mb-4">
-        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus size={13} /> Nova encomenda
-        </Button>
-      </div>
+      <PageHeader
+        title="Encomendas"
+        description="Gerencie as encomendas de clientes"
+        actions={
+          <Button variant="primary" size="md" className="px-4" onClick={() => setCreateOpen(true)}>
+            <Plus size={15} /> Nova encomenda
+          </Button>
+        }
+      />
 
-      <div className="space-y-4">
+      <div className="p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             {STATUS_OPTIONS.map((s) => (
@@ -93,7 +92,7 @@ function OrdersList() {
                 }}
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                   statusFilter === s.value
-                    ? 'bg-gray-800 text-white border-gray-800'
+                    ? 'bg-brand-600 text-white border-brand-600'
                     : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
                 }`}
               >
@@ -188,7 +187,7 @@ function OrdersList() {
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => navigate(`/orders/${o.id}`)}
                     >
-                      <Td><span className="font-medium text-gray-900 block max-w-[180px] truncate" title={o.customerName}>{o.customerName}</span></Td>
+                      <Td><span className="font-medium text-gray-900 block max-w-[180px] break-words whitespace-normal" title={o.customerName}>{o.customerName}</span></Td>
                       <Td>
                         <OrderStatusBadge status={o.status} />
                       </Td>
@@ -217,8 +216,10 @@ function OrdersList() {
       <CreateOrderDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSuccess={() => {
+        onSuccess={(id) => {
+          toast.success('Encomenda criada')
           setCreateOpen(false)
+          navigate(`/orders/${id}`)
         }}
       />
     </div>

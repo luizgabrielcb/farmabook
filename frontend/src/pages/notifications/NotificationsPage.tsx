@@ -150,8 +150,8 @@ export function NotificationsPage() {
                     {notifData?.content.map((n) => (
                       <Tr key={n.id}>
                         <Td className="font-medium text-gray-900">{n.customerName}</Td>
-                        <Td className="text-gray-500">{n.customerPhone}</Td>
-                        <Td className="max-w-xs truncate text-gray-600" title={n.message}>
+                        <Td className="text-gray-500 font-mono text-xs">{n.customerPhone}</Td>
+                        <Td className="max-w-xs whitespace-normal break-words text-gray-600" title={n.message}>
                           {n.message}
                         </Td>
                         <Td className="text-gray-500">{formatDate(n.sentAt)}</Td>

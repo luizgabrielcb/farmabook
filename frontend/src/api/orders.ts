@@ -26,6 +26,7 @@ export async function createOrder(body: {
   items: OrderItemInput[]
   observations?: string | null
   totalPrice?: number | null
+  paymentStatus?: string | null
 }): Promise<Order> {
   const { data } = await api.post<Order>('/orders', body)
   return data
