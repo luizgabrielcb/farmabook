@@ -12,8 +12,8 @@ import java.util.List;
 public interface PrescriptionMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "customerId", source = "customer.id")
-    @Mapping(target = "customerName", source = "customer.name")
+    @Mapping(target = "customerId", expression = "java(customer != null ? customer.getId() : null)")
+    @Mapping(target = "customerName", expression = "java(customer != null ? customer.getName() : null)")
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByName", source = "createdBy.name")

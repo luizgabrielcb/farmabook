@@ -456,11 +456,12 @@ class CompoundingServiceTest {
     @DisplayName("markAsPaid should set PAID payment status when successful")
     void markAsPaid_SetsPaidStatus_WhenSuccessful() {
         var compounding = utils.newCompounding();
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
         BDDMockito.when(repository.save(compounding)).thenReturn(compounding);
 
-        service.markAsPaid(compounding.getId());
+        service.markAsPaid(compounding.getId(), actor);
 
         assertThat(compounding.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
         BDDMockito.then(repository).should().save(compounding);
@@ -470,10 +471,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsPaid should throw NotFoundException when compounding is not found")
     void markAsPaid_ThrowsNotFoundException_WhenNotFound() {
         var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.markAsPaid(id))
+        assertThatThrownBy(() -> service.markAsPaid(id, actor))
                 .isInstanceOf(NotFoundException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
@@ -483,10 +485,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsPaid should throw ConflictException when payment is NOTED")
     void markAsPaid_ThrowsConflictException_WhenNoted() {
         var compounding = utils.newCompoundingWithPaymentStatus(PaymentStatus.NOTED);
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
 
-        assertThatThrownBy(() -> service.markAsPaid(compounding.getId()))
+        assertThatThrownBy(() -> service.markAsPaid(compounding.getId(), actor))
                 .isInstanceOf(ConflictException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
@@ -498,11 +501,12 @@ class CompoundingServiceTest {
     @DisplayName("markAsMakeNote should set MAKE_NOTE payment status when successful")
     void markAsMakeNote_SetsMakeNoteStatus_WhenSuccessful() {
         var compounding = utils.newCompounding();
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
         BDDMockito.when(repository.save(compounding)).thenReturn(compounding);
 
-        service.markAsMakeNote(compounding.getId());
+        service.markAsMakeNote(compounding.getId(), actor);
 
         assertThat(compounding.getPaymentStatus()).isEqualTo(PaymentStatus.MAKE_NOTE);
         BDDMockito.then(repository).should().save(compounding);
@@ -512,10 +516,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsMakeNote should throw NotFoundException when compounding is not found")
     void markAsMakeNote_ThrowsNotFoundException_WhenNotFound() {
         var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.markAsMakeNote(id))
+        assertThatThrownBy(() -> service.markAsMakeNote(id, actor))
                 .isInstanceOf(NotFoundException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
@@ -525,10 +530,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsMakeNote should throw ConflictException when payment is PAID")
     void markAsMakeNote_ThrowsConflictException_WhenPaid() {
         var compounding = utils.newCompoundingWithPaymentStatus(PaymentStatus.PAID);
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
 
-        assertThatThrownBy(() -> service.markAsMakeNote(compounding.getId()))
+        assertThatThrownBy(() -> service.markAsMakeNote(compounding.getId(), actor))
                 .isInstanceOf(ConflictException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
@@ -538,10 +544,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsMakeNote should throw ConflictException when payment is NOTED")
     void markAsMakeNote_ThrowsConflictException_WhenNoted() {
         var compounding = utils.newCompoundingWithPaymentStatus(PaymentStatus.NOTED);
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
 
-        assertThatThrownBy(() -> service.markAsMakeNote(compounding.getId()))
+        assertThatThrownBy(() -> service.markAsMakeNote(compounding.getId(), actor))
                 .isInstanceOf(ConflictException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
@@ -553,11 +560,12 @@ class CompoundingServiceTest {
     @DisplayName("markAsNoted should set NOTED payment status when successful from MAKE_NOTE")
     void markAsNoted_SetsNotedStatus_WhenMakeNote() {
         var compounding = utils.newCompoundingWithPaymentStatus(PaymentStatus.MAKE_NOTE);
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
         BDDMockito.when(repository.save(compounding)).thenReturn(compounding);
 
-        service.markAsNoted(compounding.getId());
+        service.markAsNoted(compounding.getId(), actor);
 
         assertThat(compounding.getPaymentStatus()).isEqualTo(PaymentStatus.NOTED);
         BDDMockito.then(repository).should().save(compounding);
@@ -567,10 +575,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsNoted should throw NotFoundException when compounding is not found")
     void markAsNoted_ThrowsNotFoundException_WhenNotFound() {
         var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.markAsNoted(id))
+        assertThatThrownBy(() -> service.markAsNoted(id, actor))
                 .isInstanceOf(NotFoundException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
@@ -580,10 +589,11 @@ class CompoundingServiceTest {
     @DisplayName("markAsNoted should throw ConflictException when payment is not MAKE_NOTE")
     void markAsNoted_ThrowsConflictException_WhenNotMakeNote() {
         var compounding = utils.newCompounding();
+        var actor = userUtils.newUser();
 
         BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
 
-        assertThatThrownBy(() -> service.markAsNoted(compounding.getId()))
+        assertThatThrownBy(() -> service.markAsNoted(compounding.getId(), actor))
                 .isInstanceOf(ConflictException.class);
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));

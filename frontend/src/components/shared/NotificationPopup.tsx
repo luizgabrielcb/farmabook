@@ -42,9 +42,9 @@ export function NotificationPopup({ notification, onClose }: NotificationPopupPr
   const formattedPhone = formatPhone(notification.customerPhone)
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-72 bg-white border border-green-200 rounded-lg shadow-lg p-4">
+    <div className="fixed bottom-6 right-6 z-50 w-72 bg-white border border-gray-150 rounded-2xl shadow-[0_12px_26px_-6px_rgba(20,26,32,0.18)] p-4">
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2 text-green-700">
+        <div className="flex items-center gap-2 text-[#1da851]">
           <MessageCircle size={15} />
           <span className="text-sm font-semibold">Pedido recebido!</span>
         </div>
@@ -56,7 +56,7 @@ export function NotificationPopup({ notification, onClose }: NotificationPopupPr
       <p className="text-sm font-medium text-gray-900 mb-0.5">
         Notificar {notification.customerName} via WhatsApp!
       </p>
-      <p className="text-xs text-gray-500 mb-3">{formattedPhone}</p>
+      <p className="text-xs text-gray-500 mb-3 font-mono">{formattedPhone}</p>
 
       <a
         href={notification.link}
@@ -65,7 +65,7 @@ export function NotificationPopup({ notification, onClose }: NotificationPopupPr
         onClick={onClose}
         className="w-full"
       >
-        <button className="w-full h-8 rounded bg-green-600 hover:bg-green-700 text-white text-sm font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+        <button className="w-full h-8 rounded-md bg-[#25d366] hover:bg-[#1da851] text-white text-sm font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
           <ExternalLink size={13} /> Abrir WhatsApp
         </button>
       </a>

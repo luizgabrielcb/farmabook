@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Search, X, Pencil, Trash2 } from 'lucide-react'
@@ -22,6 +22,7 @@ import { CreateCompoundingDialog } from './CreateCompoundingDialog'
 import { formatDateShort, parseLocalDate } from '@/lib/utils'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
+import { useToast } from '@/context/ToastContext'
 import type { CompoundingStatus, CompoundingPharmacy, PaymentStatus } from '@/types'
 
 const STATUS_OPTIONS: { value: CompoundingStatus | 'ALL'; label: string }[] = [
@@ -46,10 +47,26 @@ type Tab = 'compoundings' | 'pharmacies'
 
 export function CompoundingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('compoundings')
+  const [createCompoundingOpen, setCreateCompoundingOpen] = useState(false)
+  const [createPharmacyOpen, setCreatePharmacyOpen] = useState(false)
 
   return (
     <div>
-      <PageHeader title="Manipulações" description="Pedidos de manipulação em farmácias externas" />
+      <PageHeader
+        title="Manipulações"
+        description="Pedidos de manipulação em farmácias externas"
+        actions={
+          activeTab === 'compoundings' ? (
+            <Button variant="primary" size="md" className="px-4" onClick={() => setCreateCompoundingOpen(true)}>
+              <Plus size={15} /> Nova manipulação
+            </Button>
+          ) : (
+            <Button variant="primary" size="md" className="px-4" onClick={() => setCreatePharmacyOpen(true)}>
+              <Plus size={15} /> Nova farmácia
+            </Button>
+          )
+        }
+      />
       <div className="px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200">
           {([
@@ -59,7 +76,7 @@ export function CompoundingsPage() {
             <button key={t.key} onClick={() => setActiveTab(t.key)}
               className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer -mb-px ${
                 activeTab === t.key
-                  ? 'border-gray-900 text-gray-900'
+                  ? 'border-brand-600 text-brand-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}>
               {t.label}
@@ -68,15 +85,20 @@ export function CompoundingsPage() {
         </div>
       </div>
       <div className="p-6">
-        {activeTab === 'compoundings' ? <CompoundingsList /> : <PharmaciesList />}
+        {activeTab === 'compoundings'
+          ? <CompoundingsList createOpen={createCompoundingOpen} setCreateOpen={setCreateCompoundingOpen} />
+          : <PharmaciesList createOpen={createPharmacyOpen} setCreateOpen={setCreatePharmacyOpen} />
+        }
       </div>
     </div>
   )
 }
 
-function CompoundingsList() {
+interface CompoundingsListProps { createOpen: boolean; setCreateOpen: (v: boolean) => void }
+
+function CompoundingsList({ createOpen, setCreateOpen }: CompoundingsListProps) {
   const navigate = useNavigate()
-  const [createOpen, setCreateOpen] = useState(false)
+  const toast = useToast()
   const [statusFilter, setStatusFilter] = useState<CompoundingStatus | 'ALL'>('ALL')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'ALL'>('ALL')
   const [customerQuery, setCustomerQuery] = useState('')
@@ -104,120 +126,114 @@ function CompoundingsList() {
   const hasFilter = statusFilter !== 'ALL' || paymentFilter !== 'ALL' || customerQuery || dateFrom || dateTo
 
   return (
-    <div>
-      <div className="flex justify-end mb-4">
-        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus size={13} /> Nova manipulação
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-          <div>
-            <p className="text-xs text-gray-400 mb-1.5">Status</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {STATUS_OPTIONS.map((s) => (
-                <button key={s.value} onClick={() => { setStatusFilter(s.value); setPage(0) }}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                    statusFilter === s.value
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-                  }`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 mb-1.5">Pagamento</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {PAYMENT_OPTIONS.map((s) => (
-                <button key={s.value} onClick={() => { setPaymentFilter(s.value); setPage(0) }}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
-                    paymentFilter === s.value
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
-                  }`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-3 flex-wrap pt-1 border-t border-gray-100">
-            <div className="relative flex-1 min-w-48">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <Input value={customerQuery} onChange={(e) => { setCustomerQuery(e.target.value); setPage(0) }}
-                placeholder="Buscar cliente..." className="pl-8" autoComplete="off" />
-            </div>
-            <div className="flex items-center gap-2">
-              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0) }} className="w-36" />
-              <span className="text-gray-400 text-xs">até</span>
-              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0) }} className="w-36" />
-            </div>
-            {hasFilter && (
-              <Button variant="ghost" size="sm"
-                onClick={() => { setStatusFilter('ALL'); setPaymentFilter('ALL'); setCustomerQuery(''); setDateFrom(''); setDateTo(''); setPage(0) }}>
-                <X size={12} /> Limpar
-              </Button>
-            )}
+    <div className="space-y-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+        <div>
+          <p className="text-xs text-gray-400 mb-1.5">Status</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {STATUS_OPTIONS.map((s) => (
+              <button key={s.value} onClick={() => { setStatusFilter(s.value); setPage(0) }}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                  statusFilter === s.value
+                    ? 'bg-brand-600 text-white border-brand-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                }`}>
+                {s.label}
+              </button>
+            ))}
           </div>
         </div>
-
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          {isLoading ? (
-            <div className="flex justify-center py-12"><Spinner /></div>
-          ) : (
-            <>
-              <Table>
-                <TableHead>
-                  <tr>
-                    <Th>Cliente</Th><Th>Farmácia</Th><Th>Qtd.</Th>
-                    <Th>Status</Th><Th>Pagamento</Th><Th>Criado por</Th><Th>Data</Th>
-                  </tr>
-                </TableHead>
-                <TableBody>
-                  {paged.length === 0 && (
-                    <tr>
-                      <Td colSpan={7} className="text-center text-gray-400 py-10">
-                        {hasFilter ? 'Nenhuma manipulação encontrada com esses filtros.' : 'Nenhuma manipulação registrada.'}
-                      </Td>
-                    </tr>
-                  )}
-                  {paged.map((c) => (
-                    <Tr key={c.id} onClick={() => navigate(`/compoundings/${c.id}`)}>
-                      <Td><span className="font-medium text-gray-900 block max-w-[160px] truncate" title={c.customerName}>{c.customerName}</span></Td>
-                      <Td><span className="text-gray-500 block max-w-[140px] truncate" title={c.pharmacyName ?? ''}>{c.pharmacyName}</span></Td>
-                      <Td className="text-gray-500">{c.quantity}</Td>
-                      <Td><CompoundingStatusBadge status={c.status} /></Td>
-                      <Td><PaymentStatusBadge status={c.paymentStatus} /></Td>
-                      <Td className="text-gray-500">{c.createdByName}</Td>
-                      <Td className="text-gray-500">{formatDateShort(c.createdAt)}</Td>
-                    </Tr>
-                  ))}
-                </TableBody>
-              </Table>
-              <Pagination page={page} totalPages={totalPages || 1}
-                totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
-            </>
+        <div>
+          <p className="text-xs text-gray-400 mb-1.5">Pagamento</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {PAYMENT_OPTIONS.map((s) => (
+              <button key={s.value} onClick={() => { setPaymentFilter(s.value); setPage(0) }}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                  paymentFilter === s.value
+                    ? 'bg-brand-600 text-white border-brand-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                }`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-3 flex-wrap pt-1 border-t border-gray-100">
+          <div className="relative flex-1 min-w-48">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input value={customerQuery} onChange={(e) => { setCustomerQuery(e.target.value); setPage(0) }}
+              placeholder="Buscar cliente..." className="pl-8" autoComplete="off" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0) }} className="w-36" />
+            <span className="text-gray-400 text-xs">até</span>
+            <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0) }} className="w-36" />
+          </div>
+          {hasFilter && (
+            <Button variant="ghost" size="sm"
+              onClick={() => { setStatusFilter('ALL'); setPaymentFilter('ALL'); setCustomerQuery(''); setDateFrom(''); setDateTo(''); setPage(0) }}>
+              <X size={12} /> Limpar
+            </Button>
           )}
         </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        {isLoading ? (
+          <div className="flex justify-center py-12"><Spinner /></div>
+        ) : (
+          <>
+            <Table>
+              <TableHead>
+                <tr>
+                  <Th>Cliente</Th><Th>Farmácia</Th><Th>Qtd.</Th>
+                  <Th>Status</Th><Th>Pagamento</Th><Th>Data</Th>
+                </tr>
+              </TableHead>
+              <TableBody>
+                {paged.length === 0 && (
+                  <tr>
+                    <Td colSpan={6} className="text-center text-gray-400 py-10">
+                      {hasFilter ? 'Nenhuma manipulação encontrada com esses filtros.' : 'Nenhuma manipulação registrada.'}
+                    </Td>
+                  </tr>
+                )}
+                {paged.map((c) => (
+                  <Tr key={c.id} onClick={() => navigate(`/compoundings/${c.id}`)}>
+                    <Td><span className="font-medium text-gray-900 block max-w-[160px] break-words whitespace-normal" title={c.customerName}>{c.customerName}</span></Td>
+                    <Td><span className="text-gray-500 block max-w-[140px] break-words whitespace-normal" title={c.pharmacyName ?? ''}>{c.pharmacyName}</span></Td>
+                    <Td className="text-gray-500">{c.quantity}</Td>
+                    <Td><CompoundingStatusBadge status={c.status} /></Td>
+                    <Td><PaymentStatusBadge status={c.paymentStatus} /></Td>
+                    <Td className="text-gray-500">{formatDateShort(c.createdAt)}</Td>
+                  </Tr>
+                ))}
+              </TableBody>
+            </Table>
+            <Pagination page={page} totalPages={totalPages || 1}
+              totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
+          </>
+        )}
       </div>
 
       <CreateCompoundingDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSuccess={() => setCreateOpen(false)}
+        onSuccess={(id) => { toast.success('Manipulação criada'); setCreateOpen(false); navigate(`/compoundings/${id}`) }}
       />
     </div>
   )
 }
 
-function PharmaciesList() {
-  const [dialogOpen, setDialogOpen] = useState(false)
+interface PharmaciesListProps { createOpen: boolean; setCreateOpen: (v: boolean) => void }
+
+function PharmaciesList({ createOpen, setCreateOpen }: PharmaciesListProps) {
   const [editing, setEditing] = useState<CompoundingPharmacy | null>(null)
   const [form, setForm] = useState({ name: '', city: '' })
+  const dialogOpen = createOpen || editing !== null
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -232,16 +248,20 @@ function PharmaciesList() {
       editing
         ? updateCompoundingPharmacy(editing.id, form)
         : createCompoundingPharmacy(form),
-    onSuccess: () => { closeDialog(); invalidate() },
+    onSuccess: () => { toast.success(editing ? 'Alterações salvas' : 'Farmácia cadastrada'); closeDialog(); invalidate() },
   })
 
-  const deleteMutation = useMutation({ mutationFn: deleteCompoundingPharmacy, onSuccess: invalidate })
+  const deleteMutation = useMutation({ mutationFn: deleteCompoundingPharmacy, onSuccess: () => { toast.success('Farmácia excluída'); invalidate() } })
 
-  function openCreate() { setEditing(null); setForm({ name: '', city: '' }); saveMutation.reset(); setDialogOpen(true) }
+  useEffect(() => {
+    if (createOpen) { setEditing(null); setForm({ name: '', city: '' }); saveMutation.reset() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createOpen])
+
   function openEdit(p: CompoundingPharmacy) {
-    setEditing(p); setForm({ name: p.name, city: p.city }); saveMutation.reset(); setDialogOpen(true)
+    setEditing(p); setForm({ name: p.name, city: p.city }); saveMutation.reset()
   }
-  function closeDialog() { setDialogOpen(false); setEditing(null); setForm({ name: '', city: '' }) }
+  function closeDialog() { setCreateOpen(false); setEditing(null); setForm({ name: '', city: '' }) }
 
   async function handleDelete(p: CompoundingPharmacy) {
     if (!await confirm(`Excluir a farmácia "${p.name}"?`)) return
@@ -250,12 +270,6 @@ function PharmaciesList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button variant="primary" size="sm" onClick={openCreate}>
-          <Plus size={13} /> Nova farmácia
-        </Button>
-      </div>
-
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center py-12"><Spinner /></div>
@@ -270,8 +284,8 @@ function PharmaciesList() {
               )}
               {(data?.content ?? []).map((p) => (
                 <Tr key={p.id}>
-                  <Td><span className="font-medium text-gray-900 block max-w-[200px] truncate" title={p.name}>{p.name}</span></Td>
-                  <Td><span className="text-gray-500 block max-w-[140px] truncate" title={p.city}>{p.city}</span></Td>
+                  <Td><span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={p.name}>{p.name}</span></Td>
+                  <Td><span className="text-gray-500 block max-w-[140px] break-words whitespace-normal" title={p.city}>{p.city}</span></Td>
                   <Td className="text-gray-500">{formatDateShort(p.createdAt)}</Td>
                   <Td>
                     <div className="flex items-center gap-1">

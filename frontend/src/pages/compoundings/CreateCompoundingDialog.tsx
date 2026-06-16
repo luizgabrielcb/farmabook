@@ -5,17 +5,25 @@ import { createCustomer } from '@/api/customers'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { CustomerSearch } from '@/components/shared/CustomerSearch'
 import { PharmacySearch } from '@/components/shared/PharmacySearch'
 import { PhoneInput } from '@/components/shared/PhoneInput'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { useWithPin } from '@/context/PinContext'
-import type { Customer, CompoundingPharmacy } from '@/types'
+import type { Customer, CompoundingPharmacy, PaymentStatus } from '@/types'
+
+const PAYMENT_STATUS_OPTIONS: { value: PaymentStatus; label: string }[] = [
+  { value: 'TO_PAY', label: 'A pagar' },
+  { value: 'MAKE_NOTE', label: 'Fazer nota' },
+  { value: 'PAID', label: 'Pago' },
+  { value: 'NOTED', label: 'Anotado' },
+]
 
 interface Props {
   open: boolean
   onClose: () => void
-  onSuccess: () => void
+  onSuccess: (id: string) => void
 }
 
 export function CreateCompoundingDialog({ open, onClose, onSuccess }: Props) {
@@ -24,6 +32,7 @@ export function CreateCompoundingDialog({ open, onClose, onSuccess }: Props) {
   const [quantity, setQuantity] = useState('')
   const [value, setValue] = useState('')
   const [observations, setObservations] = useState('')
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('TO_PAY')
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
@@ -36,6 +45,7 @@ export function CreateCompoundingDialog({ open, onClose, onSuccess }: Props) {
     setQuantity('')
     setValue('')
     setObservations('')
+    setPaymentStatus('TO_PAY')
     setQuickAddOpen(false)
     setNewCustomerName('')
     setNewCustomerPhone('')
@@ -51,11 +61,12 @@ export function CreateCompoundingDialog({ open, onClose, onSuccess }: Props) {
       quantity: Number(quantity),
       value: value ? Number(value) : null,
       observations: observations.trim() || null,
+      paymentStatus,
     }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['compoundings-all'] })
       reset()
-      onSuccess()
+      onSuccess(created.id)
     },
   })
 
@@ -92,25 +103,34 @@ export function CreateCompoundingDialog({ open, onClose, onSuccess }: Props) {
             <label className="text-xs font-medium text-gray-700 block mb-1">Farmácia</label>
             <PharmacySearch value={pharmacy} onChange={setPharmacy} />
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1">Quantidade</label>
-            <Input type="number" min={1} max={999} step={1} value={quantity}
-              onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
-              onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, '')
-                setQuantity(val ? String(Math.min(parseInt(val, 10), 999)) : '')
-              }}
-              required autoComplete="off" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1">
-              Valor <span className="text-gray-400">(opcional)</span>
-            </label>
-            <Input type="number" min={0} max={100000} step="0.01" value={value}
-              onChange={(e) => {
-                const v = e.target.value
-                if (v === '' || /^\d{0,6}(\.\d{0,2})?$/.test(v)) setValue(v)
-              }} placeholder="R$ 0,00" autoComplete="off" />
+          <div className="flex gap-3">
+            <div className="w-24">
+              <label className="text-xs font-medium text-gray-700 block mb-1">Quantidade</label>
+              <Input type="number" min={1} max={999} step={1} value={quantity}
+                onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '')
+                  if (val && parseInt(val, 10) > 999) return
+                  setQuantity(val)
+                }}
+                required autoComplete="off" />
+            </div>
+            <div className="w-32">
+              <label className="text-xs font-medium text-gray-700 block mb-1">
+                Valor <span className="text-gray-400">(opc.)</span>
+              </label>
+              <Input type="number" min={0} max={100000} step="0.01" value={value}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '' || /^\d{0,6}(\.\d{0,2})?$/.test(v)) setValue(v)
+                }} placeholder="R$ 0,00" autoComplete="off" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-medium text-gray-700 block mb-1">Status de pagamento</label>
+              <Select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as PaymentStatus)}>
+                {PAYMENT_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </Select>
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">

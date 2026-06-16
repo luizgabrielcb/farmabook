@@ -64,6 +64,9 @@ export interface OrderItem {
   distributorName: string | null
   price: number | null
   paymentStatus: OrderPaymentStatus
+  paymentChangedById: string | null
+  paymentChangedByName: string | null
+  paymentChangedAt: string | null
 }
 
 export interface Order {
@@ -155,8 +158,8 @@ export interface PrescriptionItem {
 
 export interface Prescription {
   id: string
-  customerId: string
-  customerName: string
+  customerId: string | null
+  customerName: string | null
   status: PrescriptionStatus
   createdById: string
   createdByName: string
@@ -210,6 +213,9 @@ export interface Compounding {
   deliveredById: string | null
   deliveredByName: string | null
   deliveredAt: string | null
+  paymentChangedById: string | null
+  paymentChangedByName: string | null
+  paymentChangedAt: string | null
   createdAt: string
   updatedAt: string
 }

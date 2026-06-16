@@ -1,4 +1,4 @@
 {
-  "message": "category is required, product is required",
+  "message": "category is required, product is required, quantity is required",
   "status": 400
 }

@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/context/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Pencil, Trash2, Search, History, X } from 'lucide-react'
 import { listCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/api/customers'
 import { listOrders } from '@/api/orders'
 import { listCompoundings } from '@/api/compoundings'
+import { listPrescriptions } from '@/api/prescriptions'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +16,7 @@ import { Pagination } from '@/components/shared/Pagination'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { Dialog } from '@/components/ui/dialog'
 import { PhoneInput } from '@/components/shared/PhoneInput'
-import { OrderStatusBadge, CompoundingStatusBadge } from '@/components/shared/StatusBadge'
+import { OrderStatusBadge, CompoundingStatusBadge, PrescriptionStatusBadge } from '@/components/shared/StatusBadge'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
 import { formatDateShort, formatDate, parseLocalDate } from '@/lib/utils'
@@ -24,7 +26,7 @@ interface FormState { name: string; phoneNumber: string }
 const emptyForm: FormState = { name: '', phoneNumber: '' }
 const PAGE_SIZE = 20
 const HISTORY_PAGE_SIZE = 10
-type HistoryTab = 'orders' | 'compoundings'
+type HistoryTab = 'orders' | 'compoundings' | 'prescriptions'
 
 export function CustomersPage() {
   const navigate = useNavigate()
@@ -40,6 +42,7 @@ export function CustomersPage() {
   const [form, setForm] = useState<FormState>(emptyForm)
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -59,6 +62,12 @@ export function CustomersPage() {
     enabled: !!historyCustomer,
   })
 
+  const { data: prescriptionsData } = useQuery({
+    queryKey: ['prescriptions-all'],
+    queryFn: () => listPrescriptions(0, 500),
+    enabled: !!historyCustomer,
+  })
+
   const customerOrders = useMemo(() => {
     if (!historyCustomer || !ordersData) return []
     return [...ordersData.content]
@@ -73,8 +82,19 @@ export function CustomersPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [compoundingsData, historyCustomer])
 
+  const customerPrescriptions = useMemo(() => {
+    if (!historyCustomer || !prescriptionsData) return []
+    return [...prescriptionsData.content]
+      .filter((p) => p.customerId === historyCustomer.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [prescriptionsData, historyCustomer])
+
   const historyFiltered = useMemo(() => {
-    let items = (historyTab === 'orders' ? customerOrders : customerCompoundings) as { id: string; createdAt: string; createdByName: string; status: string }[]
+    let items = (
+      historyTab === 'orders' ? customerOrders
+        : historyTab === 'compoundings' ? customerCompoundings
+          : customerPrescriptions
+    ) as { id: string; createdAt: string; createdByName: string; status: string }[]
     if (historyDateFrom) {
       const from = parseLocalDate(historyDateFrom)
       items = items.filter((i) => new Date(i.createdAt) >= from)
@@ -85,7 +105,11 @@ export function CustomersPage() {
       items = items.filter((i) => new Date(i.createdAt) <= to)
     }
     return items
-  }, [historyTab, customerOrders, customerCompoundings, historyDateFrom, historyDateTo])
+  }, [historyTab, customerOrders, customerCompoundings, customerPrescriptions, historyDateFrom, historyDateTo])
+
+  const currentHistoryAll = historyTab === 'orders' ? customerOrders
+    : historyTab === 'compoundings' ? customerCompoundings
+      : customerPrescriptions
 
   const historyTotalPages = Math.ceil(historyFiltered.length / HISTORY_PAGE_SIZE)
   const pagedHistory = historyFiltered.slice(historyPage * HISTORY_PAGE_SIZE, (historyPage + 1) * HISTORY_PAGE_SIZE)
@@ -107,10 +131,10 @@ export function CustomersPage() {
       editing
         ? updateCustomer(editing.id, { name: form.name, phoneNumber: form.phoneNumber || undefined })
         : createCustomer({ name: form.name, phoneNumber: form.phoneNumber || undefined }),
-    onSuccess: () => { closeDialog(); invalidate() },
+    onSuccess: () => { toast.success(editing ? 'Alterações salvas' : 'Cliente cadastrado'); closeDialog(); invalidate() },
   })
 
-  const deleteMutation = useMutation({ mutationFn: deleteCustomer, onSuccess: invalidate })
+  const deleteMutation = useMutation({ mutationFn: deleteCustomer, onSuccess: () => { toast.success('Cliente excluído'); invalidate() } })
 
   function openHistory(c: Customer) {
     setHistoryCustomer(c)
@@ -143,8 +167,8 @@ export function CustomersPage() {
         title="Clientes"
         description="Cadastro de clientes da farmácia"
         actions={
-          <Button variant="primary" size="sm" onClick={openCreate}>
-            <Plus size={13} /> Novo cliente
+          <Button variant="primary" size="md" className="px-4" onClick={openCreate}>
+            <Plus size={15} /> Novo cliente
           </Button>
         }
       />
@@ -178,7 +202,7 @@ export function CustomersPage() {
                   {paged.map((c) => (
                     <Tr key={c.id}>
                       <Td className="font-medium text-gray-900">{c.name}</Td>
-                      <Td className="text-gray-500">{c.phoneNumber ?? '—'}</Td>
+                      <Td className="text-gray-500 font-mono text-xs">{c.phoneNumber ?? '—'}</Td>
                       <Td className="text-gray-500">{formatDateShort(c.createdAt)}</Td>
                       <Td>
                         <div className="flex items-center gap-1">
@@ -243,17 +267,18 @@ export function CustomersPage() {
           {([
             { key: 'orders', label: 'Encomendas', count: customerOrders.length },
             { key: 'compoundings', label: 'Manipulações', count: customerCompoundings.length },
+            { key: 'prescriptions', label: 'Receitas', count: customerPrescriptions.length },
           ] as { key: HistoryTab; label: string; count: number }[]).map((t) => (
             <button key={t.key}
               onClick={() => { setHistoryTab(t.key); setHistoryPage(0) }}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer -mb-px ${
                 historyTab === t.key
-                  ? 'border-gray-900 text-gray-900'
+                  ? 'border-brand-600 text-brand-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}>
               {t.label}
               <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                historyTab === t.key ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'
+                historyTab === t.key ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500'
               }`}>{t.count}</span>
             </button>
           ))}
@@ -277,7 +302,7 @@ export function CustomersPage() {
           )}
           {(historyDateFrom || historyDateTo) && (
             <span className="text-xs text-gray-400 ml-auto">
-              {historyFiltered.length} de {(historyTab === 'orders' ? customerOrders : customerCompoundings).length} registro(s)
+              {historyFiltered.length} de {currentHistoryAll.length} registro(s)
             </span>
           )}
         </div>
@@ -285,10 +310,10 @@ export function CustomersPage() {
         {/* Table */}
         {pagedHistory.length === 0 ? (
           <p className="text-sm text-gray-400 py-6 text-center">
-            {(historyTab === 'orders' ? ordersData : compoundingsData)
+            {(historyTab === 'orders' ? ordersData : historyTab === 'compoundings' ? compoundingsData : prescriptionsData)
               ? (historyDateFrom || historyDateTo)
                 ? 'Nenhum registro encontrado neste período.'
-                : `Nenhuma ${historyTab === 'orders' ? 'encomenda' : 'manipulação'} registrada para este cliente.`
+                : `Nenhuma ${historyTab === 'orders' ? 'encomenda' : historyTab === 'compoundings' ? 'manipulação' : 'receita'} registrada para este cliente.`
               : 'Carregando...'}
           </p>
         ) : (
@@ -297,9 +322,9 @@ export function CustomersPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-                  {historyTab === 'orders'
-                    ? <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Itens</th>
-                    : <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Farmácia</th>
+                  {historyTab === 'compoundings'
+                    ? <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Farmácia</th>
+                    : <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Itens</th>
                   }
                   <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Criado por</th>
                   <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Data</th>
@@ -312,13 +337,15 @@ export function CustomersPage() {
                     <td className="px-3 py-2">
                       {historyTab === 'orders'
                         ? <OrderStatusBadge status={(item as { status: string }).status as Parameters<typeof OrderStatusBadge>[0]['status']} />
-                        : <CompoundingStatusBadge status={(item as { status: string }).status as Parameters<typeof CompoundingStatusBadge>[0]['status']} />
+                        : historyTab === 'compoundings'
+                          ? <CompoundingStatusBadge status={(item as { status: string }).status as Parameters<typeof CompoundingStatusBadge>[0]['status']} />
+                          : <PrescriptionStatusBadge status={(item as { status: string }).status as Parameters<typeof PrescriptionStatusBadge>[0]['status']} />
                       }
                     </td>
                     <td className="px-3 py-2 text-gray-600">
-                      {historyTab === 'orders'
-                        ? `${(item as unknown as { items?: unknown[] }).items?.length ?? 0} item(s)`
-                        : (item as unknown as { pharmacyName: string }).pharmacyName
+                      {historyTab === 'compoundings'
+                        ? (item as unknown as { pharmacyName: string }).pharmacyName
+                        : `${(item as unknown as { items?: unknown[] }).items?.length ?? 0} item(s)`
                       }
                     </td>
                     <td className="px-3 py-2 text-gray-500">{item.createdByName}</td>
@@ -327,7 +354,11 @@ export function CustomersPage() {
                       <button
                         onClick={() => {
                           setHistoryCustomer(null)
-                          navigate(historyTab === 'orders' ? `/orders/${item.id}` : `/compoundings/${item.id}`)
+                          navigate(
+                            historyTab === 'orders' ? `/orders/${item.id}`
+                              : historyTab === 'compoundings' ? `/compoundings/${item.id}`
+                                : `/prescriptions/${item.id}`,
+                          )
                         }}
                         className="text-xs text-blue-600 hover:underline cursor-pointer"
                       >

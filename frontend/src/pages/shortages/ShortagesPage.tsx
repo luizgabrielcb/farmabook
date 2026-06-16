@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, CheckCircle, Search, X, Package } from 'lucide-react'
@@ -16,8 +16,10 @@ import { Dialog } from '@/components/ui/dialog'
 import { ShortageStatusBadge, ShortageOrderStatusBadge } from '@/components/shared/StatusBadge'
 import { CategoryBadge, CATEGORY_OPTIONS } from '@/components/shared/CategoryBadge'
 import { DistributorSearch } from '@/components/shared/DistributorSearch'
+import { AuditButton } from '@/components/shared/AuditButton'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
+import { useToast } from '@/context/ToastContext'
 import { CreateShortageOrderDialog } from './CreateShortageOrderDialog'
 import { formatDate, parseLocalDate } from '@/lib/utils'
 import type { Distributor, Shortage, Category, ShortageStatus, ShortageType } from '@/types'
@@ -44,9 +46,11 @@ interface TabPanelProps {
   label: string
   activeView: InnerTab
   onViewChange: (v: InnerTab) => void
+  createOpen: boolean
+  setCreateOpen: (v: boolean) => void
 }
 
-function ShortageTab({ shortageType, label, activeView, onViewChange }: TabPanelProps) {
+function ShortageTab({ shortageType, label, activeView, onViewChange, createOpen, setCreateOpen }: TabPanelProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -57,7 +61,7 @@ function ShortageTab({ shortageType, label, activeView, onViewChange }: TabPanel
               onClick={() => onViewChange(tab)}
               className={`px-4 py-1.5 text-xs font-medium rounded-full border transition-colors cursor-pointer ${
                 activeView === tab
-                  ? 'bg-gray-900 text-white border-gray-900'
+                  ? 'bg-brand-600 text-white border-brand-600'
                   : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
               }`}
             >
@@ -68,26 +72,30 @@ function ShortageTab({ shortageType, label, activeView, onViewChange }: TabPanel
       </div>
 
       {activeView === 'FALTAS'
-        ? <FaltasPanel shortageType={shortageType} label={label} />
-        : <PedidosPanel shortageType={shortageType} label={label} />
+        ? <FaltasPanel shortageType={shortageType} label={label} createOpen={createOpen} setCreateOpen={setCreateOpen} />
+        : <PedidosPanel shortageType={shortageType} label={label} createOpen={createOpen} setCreateOpen={setCreateOpen} />
       }
     </div>
   )
 }
 
-function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; label: string }) {
+interface PanelProps { shortageType: ShortageType; label: string; createOpen: boolean; setCreateOpen: (v: boolean) => void }
+
+function FaltasPanel({ shortageType, label, createOpen, setCreateOpen }: PanelProps) {
   const [statusFilter, setStatusFilter] = useState<ShortageStatus | 'ALL'>('ALL')
   const [categoryFilter, setCategoryFilter] = useState<Category | 'ALL'>('ALL')
   const [query, setQuery] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(0)
-  const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Shortage | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
+  const dialogOpen = createOpen || editing !== null
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
+  const navigate = useNavigate()
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -115,19 +123,24 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
       editing
         ? updateShortage(editing.id, { ...form, quantity: form.quantity ? Number(form.quantity) : null, shortageType, costPrice: null })
         : createShortage({ ...form, quantity: form.quantity ? Number(form.quantity) : null, shortageType }),
-    onSuccess: () => { closeDialog(); invalidate() },
+    onSuccess: () => { toast.success(editing ? 'Alterações salvas' : 'Falta registrada'); closeDialog(); invalidate() },
   })
 
-  const deleteMutation = useMutation({ mutationFn: deleteShortage, onSuccess: invalidate })
-  const markMutation = useMutation({ mutationFn: markShortageAsOrdered, onSuccess: invalidate })
+  const deleteMutation = useMutation({ mutationFn: deleteShortage, onSuccess: () => { toast.success('Falta excluída'); invalidate() } })
+  const markMutation = useMutation({ mutationFn: markShortageAsOrdered, onSuccess: () => { toast.success('Marcado como pedido'); invalidate() } })
 
-  function openCreate() { setEditing(null); setForm(emptyForm); saveMutation.reset(); setDialogOpen(true) }
+  // Reset the form when the create dialog is opened from the page header
+  useEffect(() => {
+    if (createOpen) { setEditing(null); setForm(emptyForm); saveMutation.reset() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createOpen])
+
   function openEdit(s: Shortage) {
     setEditing(s)
     setForm({ product: s.product, category: s.category, quantity: s.quantity != null ? String(s.quantity) : '' })
-    saveMutation.reset(); setDialogOpen(true)
+    saveMutation.reset()
   }
-  function closeDialog() { setDialogOpen(false); setEditing(null); setForm(emptyForm) }
+  function closeDialog() { setCreateOpen(false); setEditing(null); setForm(emptyForm) }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -174,12 +187,6 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button variant="primary" size="sm" onClick={openCreate}>
-          <Plus size={13} /> Nova falta — {label}
-        </Button>
-      </div>
-
       <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
         <div>
           <p className="text-xs text-gray-400 mb-1.5">Status</p>
@@ -188,7 +195,7 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
               <button key={s.value} onClick={() => { setStatusFilter(s.value); setPage(0) }}
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
                   statusFilter === s.value
-                    ? 'bg-gray-800 text-white border-gray-800'
+                    ? 'bg-brand-600 text-white border-brand-600'
                     : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
                 }`}>
                 {s.label}
@@ -217,7 +224,7 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
           <div className="relative flex-1 min-w-48">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <Input value={query} onChange={(e) => { setQuery(e.target.value); setPage(0) }}
-              placeholder="Buscar produto..." className="pl-8" autoComplete="off" />
+              placeholder="Buscar item..." className="pl-8" autoComplete="off" />
           </div>
           <div className="flex items-center gap-2">
             <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0) }} className="w-36" />
@@ -239,11 +246,11 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
         ) : (
           <>
             {someSelected && (
-              <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm">
-                <button onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:text-blue-700 cursor-pointer">
+              <div className="flex items-center gap-3 px-4 py-2 bg-brand-50 border-b border-brand-100 text-sm">
+                <button onClick={() => setSelectedIds(new Set())} className="text-brand-500 hover:text-brand-700 cursor-pointer">
                   <X size={14} />
                 </button>
-                <span className="text-blue-700 font-medium">{selectedIds.size} selecionado(s)</span>
+                <span className="text-brand-700 font-medium">{selectedIds.size} selecionado(s)</span>
                 <div className="flex items-center gap-2 ml-2">
                   <Button variant="secondary" size="sm" onClick={bulkMarkOrdered}>Marcar como pedido</Button>
                   <Button variant="danger" size="sm" onClick={bulkDelete}>
@@ -256,24 +263,26 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
               <TableHead>
                 <tr>
                   <Th className="w-8">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={() => {
-                        if (allSelected) setSelectedIds(new Set())
-                        else setSelectedIds(new Set(selectablePending.map((s) => s.id)))
-                      }}
-                      className="accent-gray-700 cursor-pointer"
-                    />
+                    {selectablePending.length > 0 && (
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={() => {
+                          if (allSelected) setSelectedIds(new Set())
+                          else setSelectedIds(new Set(selectablePending.map((s) => s.id)))
+                        }}
+                        className="accent-gray-700 cursor-pointer"
+                      />
+                    )}
                   </Th>
-                  <Th>Produto</Th><Th>Categoria</Th><Th>Qtd.</Th><Th>Status</Th>
-                  <Th>Registrado por</Th><Th>Pedido por</Th><Th>Data</Th><Th />
+                  <Th>Item</Th><Th>Categoria</Th><Th>Qtd.</Th><Th>Status</Th>
+                  <Th>Data</Th><Th />
                 </tr>
               </TableHead>
               <TableBody>
                 {paged.length === 0 && (
                   <tr>
-                    <Td colSpan={9} className="text-center text-gray-400 py-10">
+                    <Td colSpan={7} className="text-center text-gray-400 py-10">
                       {hasFilter ? 'Nenhuma falta encontrada com esses filtros.' : 'Nenhuma falta registrada.'}
                     </Td>
                   </tr>
@@ -294,38 +303,46 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
                         />
                       )}
                     </Td>
-                    <Td>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium text-gray-900 block max-w-[200px] truncate" title={s.product}>{s.product}</span>
+                    <Td className="max-w-[260px] whitespace-normal">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-medium text-gray-900 break-all min-w-0">{s.product}</span>
                         {s.shortageOrderId && (
-                          <span title="Parte de um pedido" className="text-blue-400">
+                          <button
+                            title="Ver pedido de falta"
+                            onClick={() => navigate(`/shortage-orders/${s.shortageOrderId}`)}
+                            className="text-blue-400 hover:text-blue-600 shrink-0 cursor-pointer"
+                          >
                             <Package size={11} />
-                          </span>
+                          </button>
                         )}
                       </div>
                     </Td>
                     <Td><CategoryBadge category={s.category} /></Td>
                     <Td>{s.quantity ?? '—'}</Td>
                     <Td><ShortageStatusBadge status={s.status} /></Td>
-                    <Td className="text-gray-500">{s.createdByName}</Td>
-                    <Td className="text-gray-500">{s.orderedByName ?? '—'}</Td>
                     <Td className="text-gray-500">{formatDate(s.createdAt)}</Td>
                     <Td>
-                      {s.status === 'PENDING' && !s.shortageOrderId && (
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700"
-                            onClick={() => handleMarkOrdered(s)}>
-                            <CheckCircle size={12} /> Pedido
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
-                            <Pencil size={12} />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
-                            onClick={() => handleDelete(s)}>
-                            <Trash2 size={12} />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1 justify-end whitespace-nowrap">
+                        {s.status === 'PENDING' && !s.shortageOrderId && (
+                          <>
+                            <Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700"
+                              onClick={() => handleMarkOrdered(s)}>
+                              <CheckCircle size={12} /> Pedido
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => openEdit(s)}>
+                              <Pencil size={12} />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
+                              onClick={() => handleDelete(s)}>
+                              <Trash2 size={12} />
+                            </Button>
+                          </>
+                        )}
+                        <AuditButton rows={[
+                          { label: 'Registrado', value: `${s.createdByName} · ${formatDate(s.createdAt)}` },
+                          { label: 'Pedido', value: s.orderedByName ? `${s.orderedByName} · ${formatDate(s.orderedAt)}` : '—' },
+                        ]} />
+                      </div>
                     </Td>
                   </Tr>
                 ))}
@@ -341,7 +358,7 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
         title={editing ? `Editar falta — ${label}` : `Nova falta — ${label}`}>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1">Produto</label>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Item</label>
             <Input value={form.product} onChange={(e) => setForm((p) => ({ ...p, product: e.target.value }))}
               maxLength={150} required autoFocus autoComplete="off" />
           </div>
@@ -359,7 +376,8 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
               onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
               onChange={(e) => {
                 const val = e.target.value.replace(/[^0-9]/g, '')
-                setForm((p) => ({ ...p, quantity: val ? String(Math.min(parseInt(val, 10), 999)) : '' }))
+                if (val && parseInt(val, 10) > 999) return
+                setForm((p) => ({ ...p, quantity: val }))
               }}
               placeholder="—" />
           </div>
@@ -376,13 +394,13 @@ function FaltasPanel({ shortageType, label }: { shortageType: ShortageType; labe
   )
 }
 
-function PedidosPanel({ shortageType, label }: { shortageType: ShortageType; label: string }) {
-  const [createOpen, setCreateOpen] = useState(false)
+function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelProps) {
   const [distributorFilter, setDistributorFilter] = useState<Distributor | null>(null)
   const [page, setPage] = useState(0)
   const navigate = useNavigate()
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -425,17 +443,12 @@ function PedidosPanel({ shortageType, label }: { shortageType: ShortageType; lab
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 w-64">
-          <DistributorSearch
-            value={distributorFilter}
-            onChange={(d) => { setDistributorFilter(d); setPage(0) }}
-            allowCreate={false}
-          />
-        </div>
-        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus size={13} /> Novo pedido — {label}
-        </Button>
+      <div className="flex items-center gap-2 w-64">
+        <DistributorSearch
+          value={distributorFilter}
+          onChange={(d) => { setDistributorFilter(d); setPage(0) }}
+          allowCreate={false}
+        />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -448,8 +461,6 @@ function PedidosPanel({ shortageType, label }: { shortageType: ShortageType; lab
                 <tr>
                   <Th>Distribuidora</Th>
                   <Th>Status</Th>
-                  <Th>Criado por</Th>
-                  <Th>Pedido por</Th>
                   <Th>Data</Th>
                   <Th />
                 </tr>
@@ -457,7 +468,7 @@ function PedidosPanel({ shortageType, label }: { shortageType: ShortageType; lab
               <TableBody>
                 {orders.length === 0 && (
                   <tr>
-                    <Td colSpan={6} className="text-center text-gray-400 py-10">
+                    <Td colSpan={4} className="text-center text-gray-400 py-10">
                       Nenhum pedido registrado.
                     </Td>
                   </tr>
@@ -472,32 +483,36 @@ function PedidosPanel({ shortageType, label }: { shortageType: ShortageType; lab
                       <span className="font-medium text-gray-900">{o.distributorName}</span>
                     </Td>
                     <Td><ShortageOrderStatusBadge status={o.status} /></Td>
-                    <Td className="text-gray-500">{o.createdByName}</Td>
-                    <Td className="text-gray-500">{o.orderedByName ?? '—'}</Td>
                     <Td className="text-gray-500">{formatDate(o.createdAt)}</Td>
                     <Td>
-                      {o.status === 'PENDING' && (
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-blue-500 hover:text-blue-700"
-                            onClick={() => handleMarkOrdered(o.id, o.distributorName)}
-                            disabled={markOrderedMutation.isPending}
-                          >
-                            <CheckCircle size={12} /> Pedido
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-400 hover:text-red-600"
-                            onClick={() => handleDelete(o.id, o.distributorName)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 size={12} />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1 justify-end whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        {o.status === 'PENDING' && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-500 hover:text-blue-700"
+                              onClick={() => handleMarkOrdered(o.id, o.distributorName)}
+                              disabled={markOrderedMutation.isPending}
+                            >
+                              <CheckCircle size={12} /> Pedido
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-400 hover:text-red-600"
+                              onClick={() => handleDelete(o.id, o.distributorName)}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 size={12} />
+                            </Button>
+                          </>
+                        )}
+                        <AuditButton rows={[
+                          { label: 'Criado', value: `${o.createdByName} · ${formatDate(o.createdAt)}` },
+                          { label: 'Pedido', value: o.orderedByName ? `${o.orderedByName} · ${formatDate(o.orderedAt)}` : '—' },
+                        ]} />
+                      </div>
                     </Td>
                   </Tr>
                 ))}
@@ -519,6 +534,10 @@ function PedidosPanel({ shortageType, label }: { shortageType: ShortageType; lab
         onOpenChange={setCreateOpen}
         shortageType={shortageType}
         label={label}
+        onSuccess={(id) => {
+          toast.success('Pedido criado')
+          navigate(`/shortage-orders/${id}`, { state: { from: `/shortages?tab=${shortageType}&view=PEDIDOS` } })
+        }}
       />
     </div>
   )
@@ -528,12 +547,15 @@ export function ShortagesPage() {
   const [params, setParams] = useSearchParams()
   const activeTab = (params.get('tab') as ShortageType) || 'WANIA'
   const activeView = (params.get('view') as InnerTab) || 'FALTAS'
+  const [createOpen, setCreateOpen] = useState(false)
 
   function setActiveTab(tab: ShortageType) {
+    setCreateOpen(false)
     setParams({ tab, view: activeView })
   }
 
   function setActiveView(view: InnerTab) {
+    setCreateOpen(false)
     setParams({ tab: activeTab, view })
   }
 
@@ -544,7 +566,15 @@ export function ShortagesPage() {
 
   return (
     <div>
-      <PageHeader title="Faltas de Estoque" description="Registre produtos em falta para reposição" />
+      <PageHeader
+        title="Faltas de Estoque"
+        description="Registre itens em falta para reposição"
+        actions={
+          <Button variant="primary" size="md" className="px-4" onClick={() => setCreateOpen(true)}>
+            <Plus size={15} /> {activeView === 'FALTAS' ? 'Registrar falta' : 'Novo pedido'}
+          </Button>
+        }
+      />
 
       <div className="px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200">
@@ -554,7 +584,7 @@ export function ShortagesPage() {
               onClick={() => setActiveTab(t.type)}
               className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors cursor-pointer -mb-px ${
                 activeTab === t.type
-                  ? 'border-gray-900 text-gray-900'
+                  ? 'border-brand-600 text-brand-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -566,8 +596,8 @@ export function ShortagesPage() {
 
       <div className="p-6">
         {activeTab === 'WANIA'
-          ? <ShortageTab key="WANIA" shortageType="WANIA" label="Wania" activeView={activeView} onViewChange={setActiveView} />
-          : <ShortageTab key="FRANCISCO" shortageType="FRANCISCO" label="Francisco" activeView={activeView} onViewChange={setActiveView} />
+          ? <ShortageTab key="WANIA" shortageType="WANIA" label="Wania" activeView={activeView} onViewChange={setActiveView} createOpen={createOpen} setCreateOpen={setCreateOpen} />
+          : <ShortageTab key="FRANCISCO" shortageType="FRANCISCO" label="Francisco" activeView={activeView} onViewChange={setActiveView} createOpen={createOpen} setCreateOpen={setCreateOpen} />
         }
       </div>
     </div>

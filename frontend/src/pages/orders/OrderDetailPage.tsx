@@ -9,7 +9,6 @@ import {
   addOrderItem, updateOrderItem,
 } from '@/api/orders'
 import { listNotifications } from '@/api/notifications'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
@@ -24,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { useWithPin } from '@/context/PinContext'
 import { useConfirm } from '@/context/ConfirmContext'
+import { useToast } from '@/context/ToastContext'
 import { formatDate } from '@/lib/utils'
 import { ArrowLeft, Plus, Trash2, Pencil, MessageCircle, Settings2, X } from 'lucide-react'
 import type { Category, Distributor, OrderItem, Notification } from '@/types'
@@ -32,6 +32,9 @@ interface ItemForm { product: string; category: Category; quantity: string; pric
 const emptyItemForm: ItemForm = { product: '', category: 'MEDICAMENTOS', quantity: '', price: '' }
 
 type DistributorPickerState = null | 'bulk' | 'bulk-selected' | { itemId: string }
+type DetailTab = 'itens' | 'pagamento' | 'historico'
+
+const currencyFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -39,7 +42,9 @@ export function OrderDetailPage() {
   const qc = useQueryClient()
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
 
+  const [tab, setTab] = useState<DetailTab>('itens')
   const [itemDialogOpen, setItemDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null)
   const [itemForm, setItemForm] = useState<ItemForm>(emptyItemForm)
@@ -69,9 +74,14 @@ export function OrderDetailPage() {
     qc.invalidateQueries({ queryKey: ['order', id] })
   }
 
+  async function handleNotify() {
+    const notifs = await listNotifications(id!, 0, 1)
+    if (notifs.content.length > 0) setPopup(notifs.content[0])
+  }
+
   const deleteMutation = useMutation({
     mutationFn: () => deleteOrder(id!),
-    onSuccess: () => navigate('/orders'),
+    onSuccess: () => { toast.success('Encomenda excluída'); navigate('/orders') },
   })
 
   const updateOrderMutation = useMutation({
@@ -81,7 +91,7 @@ export function OrderDetailPage() {
       totalPrice: parsePriceInput(editTotalPrice),
       paymentStatus: editPaymentStatus || null,
     }),
-    onSuccess: () => { setEditOrderOpen(false); invalidate() },
+    onSuccess: () => { toast.success('Alterações salvas'); setEditOrderOpen(false); invalidate() },
   })
 
   function openEditOrder() {
@@ -95,6 +105,7 @@ export function OrderDetailPage() {
   const markAllOrdered = useMutation({
     mutationFn: (distributorId: string) => markOrderAsOrdered(id!, distributorId),
     onSuccess: () => {
+      toast.success('Todos os itens marcados como pedido')
       setDistributorPicker(null)
       setPickedDistributor(null)
       invalidate()
@@ -103,18 +114,19 @@ export function OrderDetailPage() {
 
   const markAllReceived = useMutation({
     mutationFn: () => markOrderAsReceived(id!),
-    onSuccess: checkForNotification,
+    onSuccess: () => { toast.success('Todos os itens marcados como recebido'); checkForNotification() },
   })
 
   const markAllDelivered = useMutation({
     mutationFn: () => markOrderAsDelivered(id!),
-    onSuccess: invalidate,
+    onSuccess: () => { toast.success('Todos os itens marcados como entregue'); invalidate() },
   })
 
   function toggleSelectItem(itemId: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      next.has(itemId) ? next.delete(itemId) : next.add(itemId)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
       return next
     })
   }
@@ -171,7 +183,7 @@ export function OrderDetailPage() {
         ? updateOrderItem(id!, editingItem.id, body)
         : addOrderItem(id!, body)
     },
-    onSuccess: () => { closeItemDialog(); invalidate() },
+    onSuccess: () => { toast.success(editingItem ? 'Item atualizado' : 'Item adicionado'); closeItemDialog(); invalidate() },
   })
 
   function openAddItem() {
@@ -272,211 +284,308 @@ export function OrderDetailPage() {
   const isDelivered = order.status === 'DELIVERED'
   const hasPending = order.items.some((i) => i.status === 'PENDING')
   const hasOrdered = order.items.some((i) => i.status === 'ORDERED')
+  const hasReceived = order.items.some((i) => i.status === 'RECEIVED')
+  const hasDeliveredItem = order.items.some((i) => i.status === 'DELIVERED')
   const selectableItems = order.items.filter((i) => i.status !== 'DELIVERED')
   const allSelected = selectableItems.length > 0 && selectableItems.every((i) => selectedIds.has(i.id))
   const someSelected = selectedIds.size > 0
-  const hasReceived = order.items.some((i) => i.status === 'RECEIVED')
 
   async function handleDelete() {
     if (!await confirm('Excluir esta encomenda? Esta ação não pode ser desfeita.')) return
     withPin(() => deleteMutation.mutate())
   }
 
-  const currencyFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+  const tabs: { value: DetailTab; label: string; count?: number }[] = [
+    { value: 'itens', label: 'Itens', count: order.items.length },
+    { value: 'pagamento', label: 'Pagamento' },
+    { value: 'historico', label: 'Histórico' },
+  ]
 
   return (
-    <div>
-      <PageHeader
-        title={`Encomenda — ${order.customerName}`}
-        description={`Criada por ${order.createdByName} em ${formatDate(order.createdAt)}`}
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/orders')}>
-              <ArrowLeft size={13} /> Voltar
-            </Button>
-            {!isDelivered && (
-              <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
-                <Button variant="secondary" size="sm" onClick={openEditOrder}>
-                  <Settings2 size={13} /> Editar
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openDistributorPicker('bulk')}
-                  disabled={!hasPending}
-                >
-                  Todos pedidos
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => withPin(() => markAllReceived.mutate())}
-                  disabled={markAllReceived.isPending || !hasOrdered}
-                >
-                  Todos recebidos
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => withPin(() => markAllDelivered.mutate())}
-                  disabled={markAllDelivered.isPending || !hasReceived}
-                >
-                  Todos entregues
-                </Button>
-                <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleteMutation.isPending}>
-                  <Trash2 size={13} /> Excluir
-                </Button>
+    <div className="p-6">
+      <button
+        onClick={() => navigate('/orders')}
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4 cursor-pointer transition-colors"
+      >
+        <ArrowLeft size={15} /> Encomendas
+      </button>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
+        {/* MAIN CARD */}
+        <div className="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
+          {/* header */}
+          <div className="p-5 border-b border-gray-150">
+            <div className="flex items-start gap-3">
+              <p className="flex-1 min-w-0 font-bold text-gray-900 text-[17px]" title={order.customerName}>{order.customerName}</p>
+              <OrderStatusBadge status={order.status} />
+            </div>
+            {order.observations && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Observações</span>
+                <p className="text-sm text-gray-700 mt-1 break-words">{order.observations}</p>
               </div>
             )}
           </div>
-        }
-      />
 
-      <div className="p-6 space-y-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
-          <div>
-            <span className="text-gray-500 text-xs uppercase tracking-wide">Status</span>
-            <div className="mt-1"><OrderStatusBadge status={order.status} /></div>
+          {/* tabs */}
+          <div className="flex gap-1 px-4 border-b border-gray-150">
+            {tabs.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
+                  tab === t.value
+                    ? 'border-brand-600 text-brand-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {t.label}
+                {t.count != null && (
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                    tab === t.value ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>{t.count}</span>
+                )}
+              </button>
+            ))}
           </div>
-          <div>
-            <span className="text-gray-500 text-xs uppercase tracking-wide">Pagamento</span>
-            <div className="mt-1"><OrderPaymentStatusBadge status={order.paymentStatus} /></div>
-          </div>
-          <div>
-            <span className="text-gray-500 text-xs uppercase tracking-wide">Cliente</span>
-            <p className="mt-1 font-medium text-gray-900">{order.customerName}</p>
-          </div>
-          {order.totalPrice != null && (
+
+          {/* ===== ITENS TAB ===== */}
+          {tab === 'itens' && (
             <div>
-              <span className="text-gray-500 text-xs uppercase tracking-wide">Total</span>
-              <p className="mt-1 font-medium text-gray-900">{currencyFmt.format(order.totalPrice)}</p>
+              {!isDelivered && (
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-150">
+                  <span className="text-xs text-gray-400">{order.items.length} item(s)</span>
+                  <Button variant="secondary" size="sm" onClick={openAddItem}>
+                    <Plus size={12} /> Adicionar item
+                  </Button>
+                </div>
+              )}
+
+              {someSelected && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-brand-50 border-b border-brand-100 text-sm flex-wrap">
+                  <button onClick={() => setSelectedIds(new Set())} className="text-brand-500 hover:text-brand-700 cursor-pointer">
+                    <X size={14} />
+                  </button>
+                  <span className="text-brand-700 font-medium">{selectedIds.size} selecionado(s)</span>
+                  <div className="flex items-center gap-2 ml-2 flex-wrap">
+                    {order.items.some((i) => selectedIds.has(i.id) && i.status === 'PENDING') && (
+                      <Button variant="secondary" size="sm" onClick={() => openDistributorPicker('bulk-selected')}>Marcar pedido</Button>
+                    )}
+                    {order.items.some((i) => selectedIds.has(i.id) && i.status === 'ORDERED') && (
+                      <Button variant="secondary" size="sm" onClick={bulkMarkReceived}>Marcar recebido</Button>
+                    )}
+                    {order.items.some((i) => selectedIds.has(i.id) && i.status === 'RECEIVED') && (
+                      <Button variant="secondary" size="sm" onClick={bulkMarkDelivered}>Marcar entregue</Button>
+                    )}
+                    <Button variant="danger" size="sm" onClick={bulkDelete}>
+                      <Trash2 size={12} /> Excluir
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Table>
+                <TableHead>
+                  <tr>
+                    {!isDelivered && (
+                      <Th className="w-8">
+                        <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="accent-brand-600 cursor-pointer" />
+                      </Th>
+                    )}
+                    <Th>Item</Th><Th>Categoria</Th><Th>Qtd.</Th><Th>Status</Th>
+                    <Th>Distribuidora</Th><Th className="text-right">Preço un.</Th><Th />
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {order.items.length === 0 && (
+                    <tr><Td colSpan={isDelivered ? 7 : 8} className="text-center text-gray-400 py-8">Nenhum item.</Td></tr>
+                  )}
+                  {order.items.map((item) => (
+                    <Tr key={item.id}>
+                      {!isDelivered && (
+                        <Td>
+                          {item.status !== 'DELIVERED' && (
+                            <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelectItem(item.id)} className="accent-brand-600 cursor-pointer" />
+                          )}
+                        </Td>
+                      )}
+                      <Td className="max-w-[260px] whitespace-normal">
+                        <span className="font-medium text-gray-900 break-words">{item.product}</span>
+                      </Td>
+                      <Td><CategoryBadge category={item.category} /></Td>
+                      <Td>{item.quantity}</Td>
+                      <Td><OrderStatusBadge status={item.status} /></Td>
+                      <Td className="text-gray-500">{item.distributorName ?? '—'}</Td>
+                      <Td className="text-right font-mono text-gray-600">{item.price != null ? currencyFmt.format(item.price) : '—'}</Td>
+                      <Td>
+                        <ItemStatusActions
+                          orderId={id!}
+                          item={item}
+                          onEdit={() => openEditItem(item)}
+                          onSuccess={item.status === 'ORDERED' ? checkForNotification : invalidate}
+                          onMarkOrdered={() => openDistributorPicker({ itemId: item.id })}
+                        />
+                      </Td>
+                    </Tr>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
-          {order.notifiedAt && (
+
+          {/* ===== PAGAMENTO TAB ===== */}
+          {tab === 'pagamento' && (
             <div>
-              <span className="text-gray-500 text-xs uppercase tracking-wide">Notificado em</span>
-              <div className="mt-1 flex items-center gap-1 text-green-600">
-                <MessageCircle size={13} /><span>{formatDate(order.notifiedAt)}</span>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-150">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">Status de pagamento da encomenda:</span>
+                  <OrderPaymentStatusBadge status={order.paymentStatus} />
+                </div>
+                {order.totalPrice != null && (
+                  <div className="text-right">
+                    <span className="block text-xs font-semibold uppercase tracking-wide text-gray-400">Valor total</span>
+                    <span className="font-mono font-bold text-lg text-gray-900">{currencyFmt.format(order.totalPrice)}</span>
+                  </div>
+                )}
               </div>
+
+              {someSelected && order.items.some((i) => selectedIds.has(i.id) && (i.paymentStatus === 'TO_PAY' || i.paymentStatus === 'MAKE_NOTE')) && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-brand-50 border-b border-brand-100 text-sm flex-wrap">
+                  <button onClick={() => setSelectedIds(new Set())} className="text-brand-500 hover:text-brand-700 cursor-pointer">
+                    <X size={14} />
+                  </button>
+                  <span className="text-brand-700 font-medium">{selectedIds.size} selecionado(s)</span>
+                  <div className="flex items-center gap-2 ml-2 flex-wrap">
+                    {order.items.some((i) => selectedIds.has(i.id) && (i.paymentStatus === 'TO_PAY' || i.paymentStatus === 'MAKE_NOTE')) && (
+                      <Button variant="secondary" size="sm" onClick={bulkPayPaid}>Pago</Button>
+                    )}
+                    {order.items.some((i) => selectedIds.has(i.id) && i.paymentStatus === 'TO_PAY') && (
+                      <Button variant="secondary" size="sm" onClick={bulkPayMakeNote}>Fazer nota</Button>
+                    )}
+                    {order.items.some((i) => selectedIds.has(i.id) && i.paymentStatus === 'MAKE_NOTE') && (
+                      <>
+                        <Button variant="secondary" size="sm" onClick={bulkPayToPay}>A pagar</Button>
+                        <Button variant="secondary" size="sm" onClick={bulkPayNoted}>Anotado</Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <Table>
+                <TableHead>
+                  <tr>
+                    <Th className="w-8" />
+                    <Th>Item</Th><Th className="text-right">Preço un.</Th><Th>Pagamento</Th><Th />
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {order.items.map((item) => (
+                    <Tr key={item.id}>
+                      <Td>
+                        {(item.paymentStatus === 'TO_PAY' || item.paymentStatus === 'MAKE_NOTE') && (
+                          <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelectItem(item.id)} className="accent-brand-600 cursor-pointer" />
+                        )}
+                      </Td>
+                      <Td className="max-w-[280px] whitespace-normal">
+                        <span className="font-medium text-gray-900 break-words">{item.product}</span>
+                      </Td>
+                      <Td className="text-right font-mono text-gray-600">{item.price != null ? currencyFmt.format(item.price) : '—'}</Td>
+                      <Td>
+                        <OrderPaymentStatusBadge status={item.paymentStatus} />
+                        {item.paymentChangedByName && (
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            por {item.paymentChangedByName} · {formatDate(item.paymentChangedAt)}
+                          </p>
+                        )}
+                      </Td>
+                      <Td>
+                        <ItemPaymentActions orderId={id!} item={item} onSuccess={invalidate} />
+                      </Td>
+                    </Tr>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
-          {order.observations && (
-            <div className="col-span-2">
-              <span className="text-gray-500 text-xs uppercase tracking-wide">Observações</span>
-              <p className="mt-1 text-gray-700">{order.observations}</p>
+
+          {/* ===== HISTÓRICO TAB ===== */}
+          {tab === 'historico' && (
+            <div className="p-5 space-y-5 text-sm">
+              <div className="space-y-2">
+                <HistoryRow label="Criada" by={order.createdByName} at={order.createdAt} />
+                {order.notifiedAt && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-24 text-gray-500 shrink-0">Notificado</span>
+                    <span className="flex items-center gap-1.5 text-[#1da851] font-medium"><MessageCircle size={14} /> {formatDate(order.notifiedAt)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-gray-150">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Auditoria dos itens</span>
+                <div className="mt-3 space-y-4">
+                  {order.items.map((item) => (
+                    <div key={item.id}>
+                      <p className="font-semibold text-gray-900 mb-1 break-words">{item.product}</p>
+                      <div className="flex flex-col gap-0.5 text-[13px] text-gray-600">
+                        {item.orderedByName && <span><span className="text-gray-400">Pedido:</span> {item.orderedByName} · {formatDate(item.orderedAt)}</span>}
+                        {item.receivedByName && <span><span className="text-gray-400">Recebido:</span> {item.receivedByName} · {formatDate(item.receivedAt)}</span>}
+                        {item.deliveredByName && <span><span className="text-gray-400">Entregue:</span> {item.deliveredByName} · {formatDate(item.deliveredAt)}</span>}
+                        {!item.orderedByName && !item.receivedByName && !item.deliveredByName && <span className="text-gray-400">Sem movimentações.</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <span className="text-sm font-medium text-gray-900">Itens</span>
+        {/* SIDEBAR — AÇÕES RÁPIDAS */}
+        <div className="bg-white border border-gray-150 rounded-2xl shadow-sm p-4">
+          <p className="text-sm font-semibold text-gray-900 mb-3">Ações rápidas</p>
+          <div className="flex flex-col gap-2">
+            {!isDelivered ? (
+              <>
+                <Button variant="secondary" size="md" className="w-full" disabled={!hasPending} onClick={() => openDistributorPicker('bulk')}>
+                  Marcar todos pedidos
+                </Button>
+                <Button variant="secondary" size="md" className="w-full" disabled={!hasOrdered || markAllReceived.isPending} onClick={() => withPin(() => markAllReceived.mutate())}>
+                  Marcar todos recebidos
+                </Button>
+                <Button variant="secondary" size="md" className="w-full" disabled={!hasReceived || markAllDelivered.isPending} onClick={() => withPin(() => markAllDelivered.mutate())}>
+                  Marcar todos entregues
+                </Button>
+              </>
+            ) : (
+              <div className="text-center text-sm font-medium text-brand-700 bg-brand-50 rounded-md py-2">Encomenda concluída</div>
+            )}
+
+            <div className="h-px bg-gray-100 my-1" />
+
+            <Button variant="whatsapp" size="md" className="w-full" disabled={!order.notifiedAt} onClick={handleNotify}>
+              <MessageCircle size={14} /> Notificar cliente
+            </Button>
+
             {!isDelivered && (
-              <Button variant="secondary" size="sm" onClick={openAddItem}>
-                <Plus size={12} /> Adicionar item
-              </Button>
+              <>
+                <Button variant="secondary" size="md" className="w-full" onClick={openEditOrder}>
+                  <Settings2 size={14} /> Editar
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className="w-full bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending || hasDeliveredItem}
+                  title={hasDeliveredItem ? 'Não é possível excluir: a encomenda tem itens entregues' : undefined}
+                >
+                  <Trash2 size={14} /> Excluir
+                </Button>
+              </>
             )}
           </div>
-
-          {someSelected && (
-            <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm">
-              <button onClick={() => setSelectedIds(new Set())} className="text-blue-500 hover:text-blue-700 cursor-pointer">
-                <X size={14} />
-              </button>
-              <span className="text-blue-700 font-medium">{selectedIds.size} selecionado(s)</span>
-              <div className="flex items-center gap-2 ml-2">
-                {order.items.some((i) => selectedIds.has(i.id) && i.status === 'PENDING') && (
-                  <Button variant="secondary" size="sm" onClick={() => openDistributorPicker('bulk-selected')}>Marcar pedido</Button>
-                )}
-                {order.items.some((i) => selectedIds.has(i.id) && i.status === 'ORDERED') && (
-                  <Button variant="secondary" size="sm" onClick={bulkMarkReceived}>Marcar recebido</Button>
-                )}
-                {order.items.some((i) => selectedIds.has(i.id) && i.status === 'RECEIVED') && (
-                  <Button variant="secondary" size="sm" onClick={bulkMarkDelivered}>Marcar entregue</Button>
-                )}
-                <div className="border-l border-blue-200 pl-2 ml-1 flex items-center gap-2">
-                  {order.items.some((i) => selectedIds.has(i.id) && (i.paymentStatus === 'TO_PAY' || i.paymentStatus === 'MAKE_NOTE')) && (
-                    <Button variant="secondary" size="sm" onClick={bulkPayPaid}>Pago</Button>
-                  )}
-                  {order.items.some((i) => selectedIds.has(i.id) && i.paymentStatus === 'TO_PAY') && (
-                    <Button variant="secondary" size="sm" onClick={bulkPayMakeNote}>Fazer nota</Button>
-                  )}
-                  {order.items.some((i) => selectedIds.has(i.id) && i.paymentStatus === 'MAKE_NOTE') && (
-                    <>
-                      <Button variant="secondary" size="sm" onClick={bulkPayToPay}>A pagar</Button>
-                      <Button variant="secondary" size="sm" onClick={bulkPayNoted}>Anotado</Button>
-                    </>
-                  )}
-                </div>
-                <Button variant="danger" size="sm" onClick={bulkDelete}>
-                  <Trash2 size={12} /> Excluir
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <Table>
-            <TableHead>
-              <tr>
-                {!isDelivered && (
-                  <Th className="w-8">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={toggleSelectAll}
-                      className="accent-gray-700 cursor-pointer"
-                    />
-                  </Th>
-                )}
-                <Th>Produto</Th><Th>Categoria</Th><Th>Qtd.</Th><Th>Status</Th>
-                <Th>Distribuidora</Th><Th>Preço un.</Th><Th>Pagamento</Th>
-                <Th>Pedido por</Th><Th>Recebido por</Th><Th />
-              </tr>
-            </TableHead>
-            <TableBody>
-              {order.items.length === 0 && (
-                <tr><Td colSpan={isDelivered ? 10 : 11} className="text-center text-gray-400 py-8">Nenhum item.</Td></tr>
-              )}
-              {order.items.map((item) => (
-                <Tr key={item.id}>
-                  {!isDelivered && (
-                    <Td>
-                      {item.status !== 'DELIVERED' && (
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(item.id)}
-                          onChange={() => toggleSelectItem(item.id)}
-                          className="accent-gray-700 cursor-pointer"
-                        />
-                      )}
-                    </Td>
-                  )}
-                  <Td className="max-w-[200px]">
-                    <span className="font-medium text-gray-900 block truncate" title={item.product}>{item.product}</span>
-                  </Td>
-                  <Td><CategoryBadge category={item.category} /></Td>
-                  <Td>{item.quantity}</Td>
-                  <Td><OrderStatusBadge status={item.status} /></Td>
-                  <Td className="text-gray-500">{item.distributorName ?? '—'}</Td>
-                  <Td className="text-gray-500">
-                    {item.price != null ? currencyFmt.format(item.price) : '—'}
-                  </Td>
-                  <Td><OrderPaymentStatusBadge status={item.paymentStatus} /></Td>
-                  <Td className="text-gray-500">{item.orderedByName ?? '—'}</Td>
-                  <Td className="text-gray-500">{item.receivedByName ?? '—'}</Td>
-                  <Td>
-                    <ItemActions
-                      orderId={id!}
-                      item={item}
-                      onEdit={() => openEditItem(item)}
-                      onSuccess={item.status === 'ORDERED' ? checkForNotification : invalidate}
-                      onMarkOrdered={() => openDistributorPicker({ itemId: item.id })}
-                    />
-                  </Td>
-                </Tr>
-              ))}
-            </TableBody>
-          </Table>
         </div>
       </div>
 
@@ -487,21 +596,15 @@ export function OrderDetailPage() {
         title={editingItem ? 'Editar item' : 'Adicionar item'}
       >
         <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            withPin(() => saveItemMutation.mutate())
-          }}
+          onSubmit={(e) => { e.preventDefault(); withPin(() => saveItemMutation.mutate()) }}
           className="space-y-3"
         >
           <div>
-            <label className="text-xs font-medium text-gray-700 block mb-1">Produto</label>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Item</label>
             <Input
               value={itemForm.product}
               onChange={(e) => setItemForm((p) => ({ ...p, product: e.target.value }))}
-              required
-              autoFocus
-              autoComplete="off"
-              maxLength={150}
+              required autoFocus autoComplete="off" maxLength={150}
             />
           </div>
           <div>
@@ -518,15 +621,13 @@ export function OrderDetailPage() {
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Quantidade</label>
             <Input
-              type="number"
-              min={1}
-              max={1000}
-              step={1}
+              type="number" min={1} max={1000} step={1}
               value={itemForm.quantity}
               onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
               onChange={(e) => {
                 const val = e.target.value.replace(/[^0-9]/g, '')
-                setItemForm((p) => ({ ...p, quantity: val ? String(Math.min(parseInt(val, 10), 1000)) : '' }))
+                if (val && parseInt(val, 10) > 1000) return
+                setItemForm((p) => ({ ...p, quantity: val }))
               }}
               required
             />
@@ -535,19 +636,12 @@ export function OrderDetailPage() {
             <label className="text-xs font-medium text-gray-700 block mb-1">
               Preço unitário <span className="text-gray-400 font-normal">(opcional)</span>
             </label>
-            <PriceInput
-              value={itemForm.price}
-              onChange={(v) => setItemForm((p) => ({ ...p, price: v }))}
-            />
+            <PriceInput value={itemForm.price} onChange={(v) => setItemForm((p) => ({ ...p, price: v }))} />
           </div>
           {saveItemMutation.isError && <ErrorMessage error={saveItemMutation.error} />}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={closeItemDialog}>Cancelar</Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={saveItemMutation.isPending || !itemForm.quantity}
-            >
+            <Button type="submit" variant="primary" disabled={saveItemMutation.isPending || !itemForm.quantity}>
               {saveItemMutation.isPending ? 'Salvando...' : editingItem ? 'Salvar' : 'Adicionar'}
             </Button>
           </div>
@@ -573,18 +667,13 @@ export function OrderDetailPage() {
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setDistributorPicker(null)
-                setPickedDistributor(null)
-              }}
+              type="button" variant="secondary"
+              onClick={() => { setDistributorPicker(null); setPickedDistributor(null) }}
             >
               Cancelar
             </Button>
             <Button
-              type="button"
-              variant="primary"
+              type="button" variant="primary"
               disabled={!pickedDistributor || markAllOrdered.isPending}
               onClick={() => {
                 if (!pickedDistributor) return
@@ -593,9 +682,7 @@ export function OrderDetailPage() {
                 } else if (distributorPicker === 'bulk-selected') {
                   bulkMarkOrdered(pickedDistributor.id)
                 } else if (distributorPicker && typeof distributorPicker === 'object') {
-                  withPin(() =>
-                    markItemOrderedWithDistributor(distributorPicker.itemId, pickedDistributor.id),
-                  )
+                  withPin(() => markItemOrderedWithDistributor(distributorPicker.itemId, pickedDistributor.id))
                 }
               }}
             >
@@ -631,8 +718,7 @@ export function OrderDetailPage() {
               value={editObservations}
               onChange={(e) => setEditObservations(e.target.value)}
               placeholder="Observações sobre a encomenda..."
-              maxLength={500}
-              autoComplete="off"
+              maxLength={500} autoComplete="off"
             />
           </div>
           <div>
@@ -677,7 +763,17 @@ export function OrderDetailPage() {
   )
 }
 
-function ItemActions({
+function HistoryRow({ label, by, at }: { label: string; by: string | null | undefined; at: string | null | undefined }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-24 text-gray-500 shrink-0">{label}</span>
+      <span className="text-gray-900 font-medium">{by ?? '—'}</span>
+      <span className="text-gray-500 text-[13px]">{formatDate(at)}</span>
+    </div>
+  )
+}
+
+function ItemStatusActions({
   orderId,
   item,
   onEdit,
@@ -706,37 +802,15 @@ function ItemActions({
     onSuccess,
   })
 
-  const payPaidMutation = useMutation({
-    mutationFn: () => markItemPaymentAsPaid(orderId, item.id),
-    onSuccess,
-  })
-  const payMakeNoteMutation = useMutation({
-    mutationFn: () => markItemPaymentAsMakeNote(orderId, item.id),
-    onSuccess,
-  })
-  const payNotedMutation = useMutation({
-    mutationFn: () => markItemPaymentAsNoted(orderId, item.id),
-    onSuccess,
-  })
-  const payToPayMutation = useMutation({
-    mutationFn: () => markItemPaymentAsToPay(orderId, item.id),
-    onSuccess,
-  })
-
-  const isPaymentFinal = item.paymentStatus === 'PAID' || item.paymentStatus === 'NOTED'
-
   async function handleDelete() {
     if (!await confirm('Remover este item da encomenda?')) return
     withPin(() => deleteMutation.mutate())
   }
 
   return (
-    <div className="flex items-center gap-1 flex-wrap justify-end">
-      {/* Status group */}
+    <div className="flex items-center gap-1 justify-end whitespace-nowrap">
       {item.status === 'PENDING' && (
-        <Button variant="ghost" size="sm" onClick={onMarkOrdered}>
-          Marcar pedido
-        </Button>
+        <Button variant="ghost" size="sm" onClick={onMarkOrdered}>Marcar pedido</Button>
       )}
       {item.status === 'ORDERED' && (
         <Button variant="ghost" size="sm" onClick={() => withPin(() => advanceMutation.mutate())} disabled={advanceMutation.isPending}>
@@ -752,45 +826,43 @@ function ItemActions({
         </Button>
       )}
 
-      {/* Payment group — separated by divider */}
-      {!isPaymentFinal && (
-        <div className={`flex items-center gap-1 ${item.status !== 'DELIVERED' ? 'border-l border-gray-200 pl-2 ml-1' : ''}`}>
-          {item.paymentStatus === 'TO_PAY' && (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => withPin(() => payPaidMutation.mutate())} disabled={payPaidMutation.isPending}>
-                Pago
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => withPin(() => payMakeNoteMutation.mutate())} disabled={payMakeNoteMutation.isPending}>
-                Fazer nota
-              </Button>
-            </>
-          )}
-          {item.paymentStatus === 'MAKE_NOTE' && (
-            <>
-              <Button variant="ghost" size="sm" onClick={() => withPin(() => payToPayMutation.mutate())} disabled={payToPayMutation.isPending}>
-                A pagar
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => withPin(() => payPaidMutation.mutate())} disabled={payPaidMutation.isPending}>
-                Pago
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => withPin(() => payNotedMutation.mutate())} disabled={payNotedMutation.isPending}>
-                Anotado
-              </Button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Edit/delete group — separated by divider */}
       {item.status !== 'DELIVERED' && (
         <div className="flex items-center gap-1 border-l border-gray-200 pl-2 ml-1">
-          <Button variant="ghost" size="sm" onClick={onEdit}>
-            <Pencil size={12} />
-          </Button>
+          <Button variant="ghost" size="sm" onClick={onEdit}><Pencil size={12} /></Button>
           <Button variant="ghost" size="sm" onClick={handleDelete} disabled={deleteMutation.isPending} className="text-red-400 hover:text-red-600">
             <Trash2 size={12} />
           </Button>
         </div>
+      )}
+    </div>
+  )
+}
+
+function ItemPaymentActions({ orderId, item, onSuccess }: { orderId: string; item: OrderItem; onSuccess: () => void }) {
+  const withPin = useWithPin()
+
+  const payPaidMutation = useMutation({ mutationFn: () => markItemPaymentAsPaid(orderId, item.id), onSuccess })
+  const payMakeNoteMutation = useMutation({ mutationFn: () => markItemPaymentAsMakeNote(orderId, item.id), onSuccess })
+  const payNotedMutation = useMutation({ mutationFn: () => markItemPaymentAsNoted(orderId, item.id), onSuccess })
+  const payToPayMutation = useMutation({ mutationFn: () => markItemPaymentAsToPay(orderId, item.id), onSuccess })
+
+  const isPaymentFinal = item.paymentStatus === 'PAID' || item.paymentStatus === 'NOTED'
+  if (isPaymentFinal) return null
+
+  return (
+    <div className="flex items-center gap-1 justify-end whitespace-nowrap">
+      {item.paymentStatus === 'TO_PAY' && (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => withPin(() => payPaidMutation.mutate())} disabled={payPaidMutation.isPending}>Pago</Button>
+          <Button variant="ghost" size="sm" onClick={() => withPin(() => payMakeNoteMutation.mutate())} disabled={payMakeNoteMutation.isPending}>Fazer nota</Button>
+        </>
+      )}
+      {item.paymentStatus === 'MAKE_NOTE' && (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => withPin(() => payToPayMutation.mutate())} disabled={payToPayMutation.isPending}>A pagar</Button>
+          <Button variant="ghost" size="sm" onClick={() => withPin(() => payPaidMutation.mutate())} disabled={payPaidMutation.isPending}>Pago</Button>
+          <Button variant="ghost" size="sm" onClick={() => withPin(() => payNotedMutation.mutate())} disabled={payNotedMutation.isPending}>Anotado</Button>
+        </>
       )}
     </div>
   )

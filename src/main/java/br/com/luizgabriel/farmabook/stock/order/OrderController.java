@@ -190,8 +190,8 @@ public class OrderController {
     public ResponseEntity<Void> markItemPaymentAsPaid(
             @PathVariable UUID id, @PathVariable UUID itemId,
             @RequestHeader("X-Auth-Pin") String pin) {
-        authService.authenticatedUser(pin);
-        service.markItemPaymentAsPaid(id, itemId);
+        var actor = authService.authenticatedUser(pin);
+        service.markItemPaymentAsPaid(id, itemId, actor);
         return ResponseEntity.noContent().build();
     }
 
@@ -199,8 +199,8 @@ public class OrderController {
     public ResponseEntity<Void> markItemPaymentAsMakeNote(
             @PathVariable UUID id, @PathVariable UUID itemId,
             @RequestHeader("X-Auth-Pin") String pin) {
-        authService.authenticatedUser(pin);
-        service.markItemPaymentAsMakeNote(id, itemId);
+        var actor = authService.authenticatedUser(pin);
+        service.markItemPaymentAsMakeNote(id, itemId, actor);
         return ResponseEntity.noContent().build();
     }
 
@@ -208,8 +208,8 @@ public class OrderController {
     public ResponseEntity<Void> markItemPaymentAsNoted(
             @PathVariable UUID id, @PathVariable UUID itemId,
             @RequestHeader("X-Auth-Pin") String pin) {
-        authService.authenticatedUser(pin);
-        service.markItemPaymentAsNoted(id, itemId);
+        var actor = authService.authenticatedUser(pin);
+        service.markItemPaymentAsNoted(id, itemId, actor);
         return ResponseEntity.noContent().build();
     }
 
@@ -217,8 +217,8 @@ public class OrderController {
     public ResponseEntity<Void> markItemPaymentAsToPay(
             @PathVariable UUID id, @PathVariable UUID itemId,
             @RequestHeader("X-Auth-Pin") String pin) {
-        authService.authenticatedUser(pin);
-        service.markItemPaymentAsToPay(id, itemId);
+        var actor = authService.authenticatedUser(pin);
+        service.markItemPaymentAsToPay(id, itemId, actor);
         return ResponseEntity.noContent().build();
     }
 }

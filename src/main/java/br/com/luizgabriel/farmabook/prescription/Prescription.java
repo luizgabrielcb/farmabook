@@ -26,10 +26,10 @@ public class Prescription extends Auditable {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "customer_id", nullable = false)
+    @Column(name = "customer_id")
     private UUID customerId;
 
-    @Column(name = "customer_name", nullable = false, length = 100)
+    @Column(name = "customer_name", length = 100)
     private String customerName;
 
     @Enumerated(EnumType.STRING)

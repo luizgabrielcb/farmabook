@@ -10,7 +10,7 @@ export function Table({ children, className }: { children: ReactNode; className?
 }
 
 export function TableHead({ children }: { children: ReactNode }) {
-  return <thead className="border-b border-gray-200 bg-gray-50">{children}</thead>
+  return <thead className="border-b border-gray-150 bg-gray-25">{children}</thead>
 }
 
 export function TableBody({ children }: { children: ReactNode }) {
@@ -21,7 +21,7 @@ export function Th({ children, className }: { children?: ReactNode; className?: 
   return (
     <th
       className={cn(
-        'px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap',
+        'px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap',
         className,
       )}
     >
@@ -42,7 +42,7 @@ export function Td({
   title?: string
 }) {
   return (
-    <td colSpan={colSpan} title={title} className={cn('px-4 py-2.5 text-gray-700 whitespace-nowrap', className)}>
+    <td colSpan={colSpan} title={title} className={cn('px-4 py-3 text-gray-700 whitespace-nowrap', className)}>
       {children}
     </td>
   )

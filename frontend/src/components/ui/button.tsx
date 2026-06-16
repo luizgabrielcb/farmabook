@@ -1,14 +1,15 @@
 import { cn } from '@/lib/utils'
 import { type ButtonHTMLAttributes, forwardRef } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'whatsapp'
 type Size = 'sm' | 'md'
 
 const variantStyles: Record<Variant, string> = {
-  primary: 'bg-gray-800 text-white hover:bg-gray-900 border border-gray-800',
-  secondary: 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300',
+  primary: 'bg-brand-600 text-white hover:bg-brand-700 border border-brand-600 shadow-[0_1px_2px_rgba(13,138,126,0.25)]',
+  secondary: 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200',
   ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 border border-transparent',
   danger: 'bg-red-600 text-white hover:bg-red-700 border border-red-600',
+  whatsapp: 'bg-[#25d366] text-white hover:bg-[#1da851] border border-transparent',
 }
 
 const sizeStyles: Record<Size, string> = {
@@ -27,7 +28,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 disabled:opacity-50 disabled:pointer-events-none cursor-pointer',
+          'inline-flex items-center justify-center rounded-md font-medium transition-all duration-150',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45',
+          'active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none cursor-pointer',
           variantStyles[variant],
           sizeStyles[size],
           className,

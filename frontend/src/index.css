@@ -1,18 +1,100 @@
 @import "tailwindcss";
 
 @theme {
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+  /* ----------------------------------------------------------------
+   * Neutrals — soft cool-slate (never stark black/white)
+   * Mapped onto Tailwind's gray-* utility names so the whole app
+   * re-skins without touching every className.
+   * ---------------------------------------------------------------- */
+  --color-gray-25: #fafbfc;
+  --color-gray-50: #f4f6f8;
+  --color-gray-100: #eceff3;
+  --color-gray-150: #e3e8ed;
+  --color-gray-200: #d8dee5;
+  --color-gray-300: #c2cad3;
+  --color-gray-400: #97a2ad;
+  --color-gray-500: #6b7682;
+  --color-gray-600: #4f5a66;
+  --color-gray-700: #39424c;
+  --color-gray-800: #232b33;
+  --color-gray-900: #141a20;
 
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* ----------------------------------------------------------------
+   * Brand — healthcare teal (primary buttons, active nav, focus, logo)
+   * ---------------------------------------------------------------- */
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #cdf6ef;
+  --color-brand-200: #9eecdf;
+  --color-brand-300: #66dccb;
+  --color-brand-400: #2fc2b1;
+  --color-brand-500: #14a89a;
+  --color-brand-600: #0d8a7e;
+  --color-brand-700: #0e6e66;
+  --color-brand-800: #105851;
+  --color-brand-900: #0d423e;
+
+  /* ----------------------------------------------------------------
+   * Semantic tints (status badges). Soft tint 50/100 + solid 600/700.
+   * ---------------------------------------------------------------- */
+  --color-blue-50: #eff5ff;
+  --color-blue-100: #dbe8ff;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+
+  /* "amber" mapped onto yellow-* names (status "Recebido / Fazer nota") */
+  --color-yellow-50: #fef6e7;
+  --color-yellow-100: #fceabf;
+  --color-yellow-600: #d97706;
+  --color-yellow-700: #b45309;
+  --color-amber-50: #fef6e7;
+  --color-amber-100: #fceabf;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+
+  --color-green-50: #ecfdf3;
+  --color-green-100: #d1fadf;
+  --color-green-600: #08966a;
+  --color-green-700: #047a55;
+
+  --color-red-50: #fef2f2;
+  --color-red-100: #fde0e0;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+
+  --color-purple-50: #f5f2ff;
+  --color-purple-100: #e7deff;
+  --color-purple-600: #7c3aed;
+  --color-purple-700: #6927d4;
+
+  /* WhatsApp green (messaging CTAs only) */
+  --color-whatsapp: #25d366;
+  --color-whatsapp-hover: #1da851;
+
+  /* ----------------------------------------------------------------
+   * Typography
+   * ---------------------------------------------------------------- */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ----------------------------------------------------------------
+   * Radii — generously rounded but not bubbly
+   * ---------------------------------------------------------------- */
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-card: 14px;
+
+  /* ----------------------------------------------------------------
+   * Shadows — soft, low-contrast, warm-neutral
+   * ---------------------------------------------------------------- */
+  --shadow-sm: 0 1px 3px rgba(20, 26, 32, 0.06), 0 1px 2px rgba(20, 26, 32, 0.04);
+  --shadow-md: 0 4px 10px -2px rgba(20, 26, 32, 0.08), 0 2px 6px -2px rgba(20, 26, 32, 0.05);
+  --shadow-lg: 0 12px 26px -6px rgba(20, 26, 32, 0.12), 0 4px 10px -4px rgba(20, 26, 32, 0.08);
+  --shadow-xl: 0 24px 48px -12px rgba(20, 26, 32, 0.18), 0 8px 18px -8px rgba(20, 26, 32, 0.12);
+  --shadow-brand: 0 6px 16px -4px rgba(13, 138, 126, 0.35);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -21,14 +103,38 @@
 
 body {
   margin: 0;
-  background: #f9fafb;
+  background: var(--color-gray-50);
   font-family: var(--font-sans);
-  color: #111827;
+  color: var(--color-gray-900);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* Remove number input spinner arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Dialog fade-and-rise */
+@keyframes fb-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

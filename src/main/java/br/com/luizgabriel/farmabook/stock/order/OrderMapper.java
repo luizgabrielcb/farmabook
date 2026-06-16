@@ -15,7 +15,7 @@ public interface OrderMapper {
     @Mapping(target = "customerId", source = "customer.id")
     @Mapping(target = "customerName", source = "customer.name")
     @Mapping(target = "status", constant = "PENDING")
-    @Mapping(target = "paymentStatus", constant = "TO_PAY")
+    @Mapping(target = "paymentStatus", expression = "java(request.paymentStatus() != null ? request.paymentStatus() : br.com.luizgabriel.farmabook.stock.order.OrderPaymentStatus.TO_PAY)")
     @Mapping(target = "notifiedAt", ignore = true)
     @Mapping(target = "createdById", source = "createdBy.id")
     @Mapping(target = "createdByName", source = "createdBy.name")
@@ -57,6 +57,9 @@ public interface OrderMapper {
     @Mapping(target = "deliveredById", ignore = true)
     @Mapping(target = "deliveredByName", ignore = true)
     @Mapping(target = "deliveredAt", ignore = true)
+    @Mapping(target = "paymentChangedById", ignore = true)
+    @Mapping(target = "paymentChangedByName", ignore = true)
+    @Mapping(target = "paymentChangedAt", ignore = true)
     OrderItem toOrderItem(OrderItemPostRequest request);
 
     List<OrderItem> toOrderItems(List<OrderItemPostRequest> requests);

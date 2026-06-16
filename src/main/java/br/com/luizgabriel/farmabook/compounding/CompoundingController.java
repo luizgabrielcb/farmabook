@@ -119,9 +119,9 @@ public class CompoundingController {
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin) {
 
-        authService.authenticatedUser(pin);
+        var actor = authService.authenticatedUser(pin);
 
-        service.markAsPaid(id);
+        service.markAsPaid(id, actor);
 
         return ResponseEntity.noContent().build();
     }
@@ -131,9 +131,9 @@ public class CompoundingController {
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin) {
 
-        authService.authenticatedUser(pin);
+        var actor = authService.authenticatedUser(pin);
 
-        service.markAsToPay(id);
+        service.markAsToPay(id, actor);
 
         return ResponseEntity.noContent().build();
     }
@@ -143,9 +143,9 @@ public class CompoundingController {
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin) {
 
-        authService.authenticatedUser(pin);
+        var actor = authService.authenticatedUser(pin);
 
-        service.markAsMakeNote(id);
+        service.markAsMakeNote(id, actor);
 
         return ResponseEntity.noContent().build();
     }
@@ -155,9 +155,9 @@ public class CompoundingController {
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin) {
 
-        authService.authenticatedUser(pin);
+        var actor = authService.authenticatedUser(pin);
 
-        service.markAsNoted(id);
+        service.markAsNoted(id, actor);
 
         return ResponseEntity.noContent().build();
     }

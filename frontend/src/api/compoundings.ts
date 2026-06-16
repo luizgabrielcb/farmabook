@@ -7,6 +7,7 @@ interface CompoundingInput {
   pharmacyId: string
   value?: number | null
   observations?: string | null
+  paymentStatus?: string | null
 }
 
 export async function listCompoundings(page = 0, size = 500): Promise<Page<Compounding>> {

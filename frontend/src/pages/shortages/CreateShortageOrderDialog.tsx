@@ -27,9 +27,10 @@ interface Props {
   onOpenChange: (v: boolean) => void
   shortageType: ShortageType
   label: string
+  onSuccess: (id: string) => void
 }
 
-export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, label }: Props) {
+export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, label, onSuccess }: Props) {
   const [distributor, setDistributor] = useState<Distributor | null>(null)
   const [observations, setObservations] = useState('')
   const [items, setItems] = useState<ItemForm[]>([emptyItem()])
@@ -49,10 +50,16 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
           costPrice: parsePriceInput(i.costPrice),
         })),
       }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['shortage-orders', shortageType] })
       qc.invalidateQueries({ queryKey: ['shortages-all'] })
-      handleClose()
+      const id = created.id
+      setDistributor(null)
+      setObservations('')
+      setItems([emptyItem()])
+      mutation.reset()
+      onOpenChange(false)
+      onSuccess(id)
     },
   })
 
@@ -80,6 +87,7 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSubmit) return
     withPin(() => mutation.mutate())
   }
 
@@ -88,7 +96,8 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
       open={open}
       onOpenChange={(v) => !v && handleClose()}
       title={`Novo pedido — ${label}`}
-      description="Selecione a distribuidora e adicione os produtos em falta"
+      description="Selecione a distribuidora e adicione os itens em falta"
+      className="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -111,9 +120,9 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-gray-700">Produtos em falta</label>
+            <label className="text-xs font-medium text-gray-700">Itens em falta</label>
             <Button type="button" variant="ghost" size="sm" onClick={addItem}>
-              <Plus size={12} /> Adicionar produto
+              <Plus size={12} /> Adicionar item
             </Button>
           </div>
 
@@ -124,7 +133,7 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
                   <Input
                     value={item.product}
                     onChange={(e) => updateItem(index, 'product', e.target.value)}
-                    placeholder="Nome do produto"
+                    placeholder="Nome do item"
                     maxLength={150}
                     required
                     autoComplete="off"
@@ -148,10 +157,11 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
                       onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '')
-                        updateItem(index, 'quantity', val ? String(Math.min(parseInt(val, 10), 999)) : '')
+                        if (val && parseInt(val, 10) > 999) return
+                        updateItem(index, 'quantity', val)
                       }}
                       placeholder="Qtd (opc.)"
-                      className="w-28"
+                      className="w-24"
                     />
                     <PriceInput
                       value={item.costPrice}

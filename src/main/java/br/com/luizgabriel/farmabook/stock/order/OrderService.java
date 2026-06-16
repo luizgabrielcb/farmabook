@@ -49,6 +49,16 @@ public class OrderService {
 
         var items = mapper.toOrderItems(request.items());
 
+        if (request.paymentStatus() != null) {
+            var now = Instant.now();
+            items.forEach(item -> {
+                item.setPaymentStatus(request.paymentStatus());
+                item.setPaymentChangedById(actor.getId());
+                item.setPaymentChangedByName(actor.getName());
+                item.setPaymentChangedAt(now);
+            });
+        }
+
         items.forEach(item -> item.setOrder(order));
 
         order.setItems(items);
@@ -227,19 +237,20 @@ public class OrderService {
     }
 
     @Transactional
-    public void markItemPaymentAsPaid(UUID orderId, UUID itemId) {
+    public void markItemPaymentAsPaid(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
         var item = findItemOrThrowNotFound(order, itemId);
         if (item.getPaymentStatus() == OrderPaymentStatus.NOTED) {
             throw new ConflictException("Item with id '" + itemId + "' payment is NOTED and cannot be changed");
         }
         item.setPaymentStatus(OrderPaymentStatus.PAID);
+        stampPaymentChange(item, actor);
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
 
     @Transactional
-    public void markItemPaymentAsMakeNote(UUID orderId, UUID itemId) {
+    public void markItemPaymentAsMakeNote(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
         var item = findItemOrThrowNotFound(order, itemId);
         if (item.getPaymentStatus() == OrderPaymentStatus.PAID) {
@@ -249,32 +260,41 @@ public class OrderService {
             throw new ConflictException("Item with id '" + itemId + "' payment is NOTED and cannot be changed");
         }
         item.setPaymentStatus(OrderPaymentStatus.MAKE_NOTE);
+        stampPaymentChange(item, actor);
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
 
     @Transactional
-    public void markItemPaymentAsNoted(UUID orderId, UUID itemId) {
+    public void markItemPaymentAsNoted(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
         var item = findItemOrThrowNotFound(order, itemId);
         if (item.getPaymentStatus() != OrderPaymentStatus.MAKE_NOTE) {
             throw new ConflictException("Item with id '" + itemId + "' payment must be MAKE_NOTE to transition to NOTED");
         }
         item.setPaymentStatus(OrderPaymentStatus.NOTED);
+        stampPaymentChange(item, actor);
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
 
     @Transactional
-    public void markItemPaymentAsToPay(UUID orderId, UUID itemId) {
+    public void markItemPaymentAsToPay(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
         var item = findItemOrThrowNotFound(order, itemId);
         if (item.getPaymentStatus() != OrderPaymentStatus.MAKE_NOTE) {
             throw new ConflictException("Item with id '" + itemId + "' payment must be MAKE_NOTE to revert to TO_PAY");
         }
         item.setPaymentStatus(OrderPaymentStatus.TO_PAY);
+        stampPaymentChange(item, actor);
         recalculateOrderPaymentStatus(order);
         repository.save(order);
+    }
+
+    private void stampPaymentChange(OrderItem item, User actor) {
+        item.setPaymentChangedById(actor.getId());
+        item.setPaymentChangedByName(actor.getName());
+        item.setPaymentChangedAt(Instant.now());
     }
 
     private void applyMarkAsOrdered(OrderItem item, User actor, Distributor distributor) {

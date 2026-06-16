@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/context/ToastContext'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { listDistributors, createDistributor, updateDistributor, deleteDistributor } from '@/api/distributors'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -20,6 +21,7 @@ export function DistributorsPage() {
   const [form, setForm] = useState({ name: '' })
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -31,10 +33,10 @@ export function DistributorsPage() {
 
   const saveMutation = useMutation({
     mutationFn: () => editing ? updateDistributor(editing.id, form) : createDistributor(form),
-    onSuccess: () => { closeDialog(); invalidate() },
+    onSuccess: () => { toast.success(editing ? 'Alterações salvas' : 'Distribuidora cadastrada'); closeDialog(); invalidate() },
   })
 
-  const deleteMutation = useMutation({ mutationFn: deleteDistributor, onSuccess: invalidate })
+  const deleteMutation = useMutation({ mutationFn: deleteDistributor, onSuccess: () => { toast.success('Distribuidora excluída'); invalidate() } })
 
   function openCreate() {
     setEditing(null); setForm({ name: '' }); saveMutation.reset(); setDialogOpen(true)
@@ -59,8 +61,8 @@ export function DistributorsPage() {
 
       <div className="p-6 space-y-4">
         <div className="flex justify-end">
-          <Button variant="primary" size="sm" onClick={openCreate}>
-            <Plus size={13} /> Nova distribuidora
+          <Button variant="primary" size="md" className="px-4" onClick={openCreate}>
+            <Plus size={15} /> Nova distribuidora
           </Button>
         </div>
 
@@ -87,7 +89,7 @@ export function DistributorsPage() {
                 {(data?.content ?? []).map((d) => (
                   <Tr key={d.id}>
                     <Td>
-                      <span className="font-medium text-gray-900 block max-w-[200px] truncate" title={d.name}>
+                      <span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={d.name}>
                         {d.name}
                       </span>
                     </Td>

@@ -118,9 +118,9 @@ export function PinProvider({ children }: { children: ReactNode }) {
       background: 'rgba(0,0,0,0.5)',
     }}>
       <div style={{
-        background: 'white', borderRadius: 8,
-        border: '1px solid #e5e7eb',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        background: 'white', borderRadius: 16,
+        border: '1px solid #e3e8ed',
+        boxShadow: '0 24px 48px -12px rgba(20,26,32,0.18)',
         width: 224, padding: 24,
       }}>
         <p style={{ fontSize: 14, fontWeight: 500, color: '#111827', textAlign: 'center', marginBottom: 16 }}>
@@ -130,11 +130,11 @@ export function PinProvider({ children }: { children: ReactNode }) {
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} style={{
-              width: 36, height: 36, borderRadius: 6,
-              border: pin.length > i ? '2px solid #374151' : '2px solid #e5e7eb',
-              background: pin.length > i ? '#f9fafb' : 'white',
+              width: 36, height: 36, borderRadius: 8,
+              border: pin.length > i ? '2px solid #0d8a7e' : '2px solid #e3e8ed',
+              background: pin.length > i ? '#f0fdfa' : 'white',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 500,
+              fontSize: 18, fontWeight: 500, color: '#0e6e66',
             }}>
               {pin[i] ? '•' : ''}
             </div>
@@ -152,9 +152,9 @@ export function PinProvider({ children }: { children: ReactNode }) {
             type="button"
             onClick={cancel}
             style={{
-              flex: 1, height: 32, borderRadius: 6,
-              border: '1px solid #d1d5db', background: 'white',
-              fontSize: 14, color: '#4b5563', cursor: 'pointer',
+              flex: 1, height: 32, borderRadius: 8,
+              border: '1px solid #d8dee5', background: 'white',
+              fontSize: 14, color: '#4f5a66', cursor: 'pointer',
             }}
             onMouseOver={(e) => { e.currentTarget.style.background = '#f9fafb' }}
             onMouseOut={(e) => { e.currentTarget.style.background = 'white' }}
@@ -166,9 +166,9 @@ export function PinProvider({ children }: { children: ReactNode }) {
             onClick={submit}
             disabled={pin.length === 0 || loading}
             style={{
-              flex: 1, height: 32, borderRadius: 6, border: 'none',
-              background: pin.length === 0 || loading ? '#9ca3af' : '#1f2937',
-              fontSize: 14, fontWeight: 500, color: 'white',
+              flex: 1, height: 32, borderRadius: 8, border: 'none',
+              background: pin.length === 0 || loading ? '#97a2ad' : '#0d8a7e',
+              fontSize: 14, fontWeight: 600, color: 'white',
               cursor: pin.length === 0 || loading ? 'not-allowed' : 'pointer',
             }}
           >

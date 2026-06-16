@@ -11,5 +11,12 @@
   "receivedAt": null,
   "deliveredById": null,
   "deliveredByName": null,
-  "deliveredAt": null
+  "deliveredAt": null,
+  "distributorId": null,
+  "distributorName": null,
+  "price": null,
+  "paymentStatus": "TO_PAY",
+  "paymentChangedById": null,
+  "paymentChangedByName": null,
+  "paymentChangedAt": null
 }

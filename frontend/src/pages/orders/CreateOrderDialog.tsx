@@ -13,15 +13,22 @@ import { CATEGORY_OPTIONS } from '@/components/shared/CategoryBadge'
 import { PriceInput, parsePriceInput } from '@/components/shared/PriceInput'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { useWithPin } from '@/context/PinContext'
-import type { Customer, Category } from '@/types'
+import type { Customer, Category, OrderPaymentStatus } from '@/types'
 
 interface ItemForm { product: string; category: Category; quantity: string; price: string }
 const emptyItem = (): ItemForm => ({ product: '', category: 'MEDICAMENTOS', quantity: '', price: '' })
 
+const PAYMENT_STATUS_OPTIONS: { value: OrderPaymentStatus; label: string }[] = [
+  { value: 'TO_PAY', label: 'A pagar' },
+  { value: 'MAKE_NOTE', label: 'Fazer nota' },
+  { value: 'PAID', label: 'Pago' },
+  { value: 'NOTED', label: 'Anotado' },
+]
+
 interface Props {
   open: boolean
   onClose: () => void
-  onSuccess: () => void
+  onSuccess: (id: string) => void
 }
 
 export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
@@ -29,6 +36,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
   const [items, setItems] = useState<ItemForm[]>([emptyItem()])
   const [observations, setObservations] = useState('')
   const [totalPrice, setTotalPrice] = useState('')
+  const [paymentStatus, setPaymentStatus] = useState<OrderPaymentStatus>('TO_PAY')
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerPhone, setNewCustomerPhone] = useState('')
@@ -40,6 +48,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
     setItems([emptyItem()])
     setObservations('')
     setTotalPrice('')
+    setPaymentStatus('TO_PAY')
     setQuickAddOpen(false)
     setNewCustomerName('')
     setNewCustomerPhone('')
@@ -62,11 +71,12 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
           })),
         observations: observations.trim() || null,
         totalPrice: parsePriceInput(totalPrice),
+        paymentStatus,
       }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ['orders-all'] })
       reset()
-      onSuccess()
+      onSuccess(created.id)
     },
   })
 
@@ -99,7 +109,8 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => !v && handleClose()}
-        title="Nova encomenda" description="Selecione o cliente e adicione os itens">
+        title="Nova encomenda" description="Selecione o cliente e adicione os itens"
+        className="max-w-lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Cliente</label>
@@ -120,50 +131,55 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                 <Plus size={12} /> Adicionar
               </Button>
             </div>
-            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
               {items.map((item, i) => (
-                <div key={i} className="flex gap-2 items-start">
-                  <Input
-                    value={item.product}
-                    onChange={(e) => updateItem(i, 'product', e.target.value)}
-                    placeholder="Produto"
-                    className="flex-1"
-                    autoComplete="off"
-                    maxLength={150}
-                  />
-                  <Select value={item.category}
-                    onChange={(e) => updateItem(i, 'category', e.target.value)}
-                    className="w-36">
-                    {CATEGORY_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </Select>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={1000}
-                    step={1}
-                    value={item.quantity}
-                    onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9]/g, '')
-                      updateItem(i, 'quantity', val ? String(Math.min(parseInt(val, 10), 1000)) : '')
-                    }}
-                    placeholder="Qtd"
-                    className="w-16"
-                    required
-                  />
-                  <PriceInput
-                    value={item.price}
-                    onChange={(v) => updateItem(i, 'price', v)}
-                    placeholder="Preço un."
-                    className={`w-24 ${hasTotalPrice ? 'opacity-40 pointer-events-none' : ''}`}
-                  />
-                  {items.length > 1 && (
-                    <Button type="button" variant="ghost" size="sm"
-                      className="text-red-400 hover:text-red-600 shrink-0"
-                      onClick={() => removeItem(i)}>
-                      <Trash2 size={12} />
-                    </Button>
-                  )}
+                <div key={i} className="rounded-lg border border-gray-150 bg-gray-25 p-2.5 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={item.product}
+                      onChange={(e) => updateItem(i, 'product', e.target.value)}
+                      placeholder="Nome do item"
+                      className="flex-1 bg-white"
+                      autoComplete="off"
+                      maxLength={150}
+                    />
+                    {items.length > 1 && (
+                      <Button type="button" variant="ghost" size="sm"
+                        className="text-red-400 hover:text-red-600 shrink-0"
+                        onClick={() => removeItem(i)}>
+                        <Trash2 size={13} />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Select value={item.category}
+                      onChange={(e) => updateItem(i, 'category', e.target.value)}
+                      className="flex-1 bg-white">
+                      {CATEGORY_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </Select>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      step={1}
+                      value={item.quantity}
+                      onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '')
+                        if (val && parseInt(val, 10) > 1000) return
+                        updateItem(i, 'quantity', val)
+                      }}
+                      placeholder="Qtd"
+                      className="w-20 bg-white"
+                      required
+                    />
+                    <PriceInput
+                      value={item.price}
+                      onChange={(v) => updateItem(i, 'price', v)}
+                      placeholder="Preço (opc.)"
+                      className={`w-36 bg-white ${hasTotalPrice ? 'opacity-40 pointer-events-none' : ''}`}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -192,6 +208,13 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                 className={anyItemHasPrice ? 'opacity-40 pointer-events-none' : ''}
               />
             </div>
+          </div>
+
+          <div className="w-44">
+            <label className="text-xs font-medium text-gray-700 block mb-1">Status de pagamento</label>
+            <Select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as OrderPaymentStatus)}>
+              {PAYMENT_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </Select>
           </div>
 
           {createMutation.isError && <ErrorMessage error={createMutation.error} />}

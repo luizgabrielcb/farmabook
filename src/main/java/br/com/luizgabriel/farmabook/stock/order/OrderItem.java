@@ -78,4 +78,11 @@ public class OrderItem extends Auditable {
     @Column(name = "payment_status", nullable = false, length = 20)
     @Builder.Default
     private OrderPaymentStatus paymentStatus = OrderPaymentStatus.TO_PAY;
+
+    @Column(name = "payment_changed_by_id")
+    private UUID paymentChangedById;
+    @Column(name = "payment_changed_by_name", length = 100)
+    private String paymentChangedByName;
+    @Column(name = "payment_changed_at")
+    private Instant paymentChangedAt;
 }

@@ -79,7 +79,7 @@ public class OrderUtils {
     }
 
     public OrderPostRequest newOrderPostRequest() {
-        return new OrderPostRequest(CustomerUtils.CUSTOMER_ID, List.of(newOrderItemPostRequest()), null, null);
+        return new OrderPostRequest(CustomerUtils.CUSTOMER_ID, List.of(newOrderItemPostRequest()), null, null, null);
     }
 
     public OrderItemPostRequest newOrderItemPostRequest() {
@@ -116,7 +116,8 @@ public class OrderUtils {
                 item.getReceivedById(), item.getReceivedByName(), item.getReceivedAt(),
                 item.getDeliveredById(), item.getDeliveredByName(), item.getDeliveredAt(),
                 Instant.now(), Instant.now(),
-                item.getDistributorId(), item.getDistributorName(), item.getPrice(), item.getPaymentStatus());
+                item.getDistributorId(), item.getDistributorName(), item.getPrice(), item.getPaymentStatus(),
+                item.getPaymentChangedById(), item.getPaymentChangedByName(), item.getPaymentChangedAt());
     }
 
     public NotificationGetResponse newNotificationGetResponse() {

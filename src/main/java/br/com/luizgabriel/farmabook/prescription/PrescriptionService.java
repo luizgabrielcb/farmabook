@@ -25,7 +25,9 @@ public class PrescriptionService {
 
     @Transactional
     public PrescriptionPostResponse save(PrescriptionPostRequest request, User actor) {
-        var customer = customerService.findByIdOrThrowNotFound(request.customerId());
+        var customer = request.customerId() != null
+                ? customerService.findByIdOrThrowNotFound(request.customerId())
+                : null;
 
         var prescription = mapper.toPrescription(request, customer, actor);
 
@@ -55,9 +57,11 @@ public class PrescriptionService {
 
         ensureMutable(prescription);
 
-        var customer = customerService.findByIdOrThrowNotFound(request.customerId());
-        prescription.setCustomerId(customer.getId());
-        prescription.setCustomerName(customer.getName());
+        var customer = request.customerId() != null
+                ? customerService.findByIdOrThrowNotFound(request.customerId())
+                : null;
+        prescription.setCustomerId(customer != null ? customer.getId() : null);
+        prescription.setCustomerName(customer != null ? customer.getName() : null);
         prescription.setObservations(request.observations());
 
         return mapper.toPrescriptionPutResponse(prescription);

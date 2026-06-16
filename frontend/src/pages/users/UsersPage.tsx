@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useToast } from '@/context/ToastContext'
 import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-react'
 import { listUsers, createUser, updateUser, deleteUser, activateUser, deactivateUser } from '@/api/users'
+import { changePin } from '@/api/auth'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +21,8 @@ import type { User, UserRole } from '@/types'
 
 interface FormState { name: string; pin: string; role: UserRole }
 const emptyForm: FormState = { name: '', pin: '', role: 'SELLER' }
+interface PinFormState { currentPin: string; newPin: string; confirmPin: string }
+const emptyPinForm: PinFormState = { currentPin: '', newPin: '', confirmPin: '' }
 const PAGE_SIZE = 20
 
 export function UsersPage() {
@@ -27,8 +31,11 @@ export function UsersPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
+  const [pinForm, setPinForm] = useState<PinFormState>(emptyPinForm)
+  const [pinMismatch, setPinMismatch] = useState(false)
   const withPin = useWithPin()
   const confirm = useConfirm()
+  const toast = useToast()
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -52,21 +59,34 @@ export function UsersPage() {
       editing
         ? updateUser(editing.id, { name: form.name, role: form.role })
         : createUser({ name: form.name, pin: form.pin, role: form.role }),
-    onSuccess: () => { closeDialog(); invalidate() },
+    onSuccess: () => { toast.success(editing ? 'Alterações salvas' : 'Usuário criado'); closeDialog(); invalidate() },
   })
 
-  const deleteMutation = useMutation({ mutationFn: deleteUser, onSuccess: invalidate })
+  const deleteMutation = useMutation({ mutationFn: deleteUser, onSuccess: () => { toast.success('Usuário excluído'); invalidate() } })
   const toggleMutation = useMutation({
     mutationFn: (u: User) => (u.active ? deactivateUser(u.id) : activateUser(u.id)),
     onSuccess: invalidate,
   })
 
+  const changePinMutation = useMutation({
+    mutationFn: () => changePin(pinForm.currentPin, pinForm.newPin),
+    onSuccess: () => { toast.success('Senha alterada'); setPinForm(emptyPinForm); setPinMismatch(false) },
+  })
+
   function openCreate() { setEditing(null); setForm(emptyForm); saveMutation.reset(); setDialogOpen(true) }
   function openEdit(u: User) {
     setEditing(u); setForm({ name: u.name, pin: '', role: u.role })
-    saveMutation.reset(); setDialogOpen(true)
+    setPinForm(emptyPinForm); setPinMismatch(false)
+    saveMutation.reset(); changePinMutation.reset(); setDialogOpen(true)
   }
-  function closeDialog() { setDialogOpen(false); setEditing(null); setForm(emptyForm) }
+  function closeDialog() { setDialogOpen(false); setEditing(null); setForm(emptyForm); setPinForm(emptyPinForm); setPinMismatch(false) }
+
+  function handleChangePin(e: React.FormEvent) {
+    e.preventDefault()
+    if (pinForm.newPin !== pinForm.confirmPin) { setPinMismatch(true); return }
+    setPinMismatch(false)
+    changePinMutation.mutate()
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -94,8 +114,8 @@ export function UsersPage() {
         title="Usuários"
         description="Gerencie os usuários do sistema"
         actions={
-          <Button variant="primary" size="sm" onClick={openCreate}>
-            <Plus size={13} /> Novo usuário
+          <Button variant="primary" size="md" className="px-4" onClick={openCreate}>
+            <Plus size={15} /> Novo usuário
           </Button>
         }
       />
@@ -203,6 +223,51 @@ export function UsersPage() {
             </Button>
           </div>
         </form>
+
+        {editing && (
+          <form onSubmit={handleChangePin} autoComplete="off" className="space-y-3 mt-5 pt-4 border-t border-gray-150">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Trocar senha</p>
+            <div>
+              <label className="text-xs font-medium text-gray-700 block mb-1">PIN atual</label>
+              <Input
+                type="password"
+                value={pinForm.currentPin}
+                onChange={(e) => setPinForm((p) => ({ ...p, currentPin: e.target.value }))}
+                maxLength={4} pattern="\d{1,4}" required placeholder="••••"
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs font-medium text-gray-700 block mb-1">Novo PIN</label>
+                <Input
+                  type="password"
+                  value={pinForm.newPin}
+                  onChange={(e) => setPinForm((p) => ({ ...p, newPin: e.target.value }))}
+                  maxLength={4} pattern="\d{1,4}" required placeholder="••••"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-medium text-gray-700 block mb-1">Confirmar novo PIN</label>
+                <Input
+                  type="password"
+                  value={pinForm.confirmPin}
+                  onChange={(e) => setPinForm((p) => ({ ...p, confirmPin: e.target.value }))}
+                  maxLength={4} pattern="\d{1,4}" required placeholder="••••"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+            {pinMismatch && <p className="text-sm text-red-600">Os PINs não coincidem.</p>}
+            {changePinMutation.isError && <ErrorMessage error={changePinMutation.error} />}
+            <div className="flex justify-end pt-2">
+              <Button type="submit" variant="secondary" disabled={changePinMutation.isPending}>
+                {changePinMutation.isPending ? 'Alterando...' : 'Alterar senha'}
+              </Button>
+            </div>
+          </form>
+        )}
       </Dialog>
     </div>
   )
