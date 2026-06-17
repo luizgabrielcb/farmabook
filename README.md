@@ -185,7 +185,7 @@ Cada domínio segue o mesmo formato: `Entity`, `Repository`, `Service` (regra de
 
 ## 🧪 Testes e cobertura
 
-O backend tem **451 testes** automatizados, divididos entre **unitários** (serviços, com Mockito) e **de integração** (controllers, com Testcontainers + PostgreSQL real).
+O backend tem **459 testes** automatizados, divididos entre **unitários** (serviços, com Mockito) e **de integração** (controllers, com Testcontainers + PostgreSQL real).
 
 | Métrica | Cobertura |
 |---|---|
