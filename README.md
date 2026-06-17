@@ -38,7 +38,7 @@ Sistema de gestão de encomendas, faltas, manipulações e receitas para farmác
 
 ## 📸 Demonstração
 
-> _Em breve: GIF do fluxo "marcar item como recebido → gerar mensagem de WhatsApp", e screenshots das telas principais._
+> _Em breve..._
 
 <!--
   TODO — substituir pelos arquivos reais:
