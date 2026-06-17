@@ -189,7 +189,7 @@ function OrdersList() {
                       className="cursor-pointer hover:bg-gray-50"
                       onClick={() => navigate(`/orders/${o.id}`)}
                     >
-                      <Td><span className="font-medium text-gray-900 block max-w-[180px] break-words whitespace-normal" title={o.customerName}>{o.customerName}</span></Td>
+                      <Td><span className="font-medium text-gray-900 block max-w-[320px] break-words whitespace-normal" title={o.customerName}>{o.customerName}</span></Td>
                       <Td>
                         <OrderStatusBadge status={o.status} />
                       </Td>

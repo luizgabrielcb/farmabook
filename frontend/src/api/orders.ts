@@ -7,6 +7,7 @@ interface OrderItemInput {
   category: Category
   quantity: number | null
   price?: number | null
+  paymentStatus?: string | null
 }
 
 export async function listOrders(page = 0, size = 20): Promise<Page<Order>> {

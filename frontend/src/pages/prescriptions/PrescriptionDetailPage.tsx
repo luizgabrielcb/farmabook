@@ -468,7 +468,7 @@ export function PrescriptionDetailPage() {
         <form onSubmit={(e) => { e.preventDefault(); withPin(() => updateMutation.mutate()) }} className="space-y-3">
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Cliente</label>
-            <CustomerSearch value={editCustomer} onChange={setEditCustomer} onQuickAdd={() => setQuickAddOpen(true)} />
+            <CustomerSearch value={editCustomer} onChange={setEditCustomer} onQuickAdd={(q) => { setNewCustomerName(q); setQuickAddOpen(true) }} />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">

@@ -27,7 +27,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setTimeout(() => dismiss(id), 3500)
   }, [dismiss])
 
-  const success = useCallback((message: string) => addToast(message, 'success'), [addToast])
+  // Success confirmations were removed by request — keep the API as a no-op so
+  // existing call sites stay valid without showing the bottom-right popups.
+  const success = useCallback(() => {}, [])
   const error = useCallback((message: string) => addToast(message, 'error'), [addToast])
 
   return (

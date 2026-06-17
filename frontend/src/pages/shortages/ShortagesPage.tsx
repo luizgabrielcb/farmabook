@@ -463,8 +463,17 @@ function FaltasPanel({ shortageType, label, createOpen, setCreateOpen }: PanelPr
   )
 }
 
+const ORDER_STATUS_OPTIONS: { value: 'ALL' | 'PENDING' | 'ORDERED'; label: string }[] = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'PENDING', label: 'Pendente' },
+  { value: 'ORDERED', label: 'Pedido' },
+]
+
 function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelProps) {
   const [distributorFilter, setDistributorFilter] = useState<Distributor | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ORDERED'>('ALL')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(0)
   const navigate = useNavigate()
   const withPin = useWithPin()
@@ -473,10 +482,20 @@ function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelP
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['shortage-orders', shortageType, distributorFilter?.id, page],
-    queryFn: () =>
-      listShortageOrders(shortageType, distributorFilter?.id, page, PAGE_SIZE),
+    queryKey: ['shortage-orders', shortageType],
+    queryFn: () => listShortageOrders(shortageType, undefined, 0, 500),
   })
+
+  const filtered = useMemo(() => {
+    let items = data?.content ?? []
+    if (distributorFilter) items = items.filter((o) => o.distributorId === distributorFilter.id)
+    if (statusFilter !== 'ALL') items = items.filter((o) => o.status === statusFilter)
+    if (dateFrom) { const from = parseLocalDate(dateFrom); items = items.filter((o) => new Date(o.createdAt) >= from) }
+    if (dateTo) { const to = parseLocalDate(dateTo); to.setHours(23, 59, 59, 999); items = items.filter((o) => new Date(o.createdAt) <= to) }
+    return items
+  }, [data, distributorFilter, statusFilter, dateFrom, dateTo])
+
+  const hasFilter = !!distributorFilter || statusFilter !== 'ALL' || !!dateFrom || !!dateTo
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['shortage-orders', shortageType] })
 
@@ -506,18 +525,48 @@ function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelP
     withPin(() => markOrderedMutation.mutate(id))
   }
 
-  const orders = data?.content ?? []
-  const totalPages = data?.totalPages ?? 1
-  const totalElements = data?.totalElements ?? 0
+  const totalElements = filtered.length
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const orders = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 w-64">
-        <DistributorSearch
-          value={distributorFilter}
-          onChange={(d) => { setDistributorFilter(d); setPage(0) }}
-          allowCreate={false}
-        />
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+        <div>
+          <p className="text-xs text-gray-400 mb-1.5">Status</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {ORDER_STATUS_OPTIONS.map((s) => (
+              <button key={s.value} onClick={() => { setStatusFilter(s.value); setPage(0) }}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors cursor-pointer ${
+                  statusFilter === s.value
+                    ? 'bg-brand-600 text-white border-brand-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                }`}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-3 flex-wrap pt-1 border-t border-gray-100">
+          <div className="w-64">
+            <DistributorSearch
+              value={distributorFilter}
+              onChange={(d) => { setDistributorFilter(d); setPage(0) }}
+              allowCreate={false}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(0) }} className="w-36" />
+            <span className="text-gray-400 text-xs">até</span>
+            <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(0) }} className="w-36" />
+          </div>
+          {hasFilter && (
+            <Button variant="ghost" size="sm"
+              onClick={() => { setDistributorFilter(null); setStatusFilter('ALL'); setDateFrom(''); setDateTo(''); setPage(0) }}>
+              <X size={12} /> Limpar
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -539,7 +588,7 @@ function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelP
                 {orders.length === 0 && (
                   <tr>
                     <Td colSpan={4} className="text-center text-gray-400 py-10">
-                      Nenhum pedido registrado.
+                      {hasFilter ? 'Nenhum pedido encontrado com esses filtros.' : 'Nenhum pedido registrado.'}
                     </Td>
                   </tr>
                 )}
@@ -591,7 +640,7 @@ function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelP
             </div>
 
             <CardList>
-              {orders.length === 0 && <CardEmpty>Nenhum pedido registrado.</CardEmpty>}
+              {orders.length === 0 && <CardEmpty>{hasFilter ? 'Nenhum pedido encontrado com esses filtros.' : 'Nenhum pedido registrado.'}</CardEmpty>}
               {orders.map((o) => (
                 <MobileCard
                   key={o.id}

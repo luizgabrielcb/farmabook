@@ -274,6 +274,7 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
   const [page, setPage] = useState(0)
   const [editing, setEditing] = useState<Prescription | null>(null)
   const [form, setForm] = useState<StockFormState>(emptyStockForm)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const dialogOpen = createOpen || editing !== null
 
   const filtered = useMemo(() => {
@@ -339,6 +340,40 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
     withPin(() => deleteMutation.mutate(p.id))
   }
 
+  const selectablePending = paged.filter((p) => p.status === 'PENDING')
+  const allSelected = selectablePending.length > 0 && selectablePending.every((p) => selectedIds.has(p.id))
+  const someSelected = selectedIds.size > 0
+
+  function toggleId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  async function bulkFinalize() {
+    const targets = paged.filter((p) => selectedIds.has(p.id) && p.status === 'PENDING')
+    if (!targets.length) return
+    if (!await confirm(`Marcar ${targets.length} pendência(s) como finalizada(s)?`)) return
+    withPin(async () => {
+      for (const p of targets) await markAllAsReceived(p.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
+  async function bulkDelete() {
+    const targets = paged.filter((p) => selectedIds.has(p.id) && p.status === 'PENDING')
+    if (!targets.length) return
+    if (!await confirm(`Excluir ${targets.length} pendência(s)?`)) return
+    withPin(async () => {
+      for (const p of targets) await deletePrescription(p.id)
+      setSelectedIds(new Set())
+      invalidate()
+    })
+  }
+
   return (
     <div className="space-y-4">
       <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
@@ -390,10 +425,37 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
           <>
+            {someSelected && (
+              <div className="flex items-center gap-3 px-4 py-2 bg-brand-50 border-b border-brand-100 text-sm">
+                <button onClick={() => setSelectedIds(new Set())} className="text-brand-500 hover:text-brand-700 cursor-pointer">
+                  <X size={14} />
+                </button>
+                <span className="text-brand-700 font-medium">{selectedIds.size} selecionado(s)</span>
+                <div className="flex items-center gap-2 ml-2">
+                  <Button variant="secondary" size="sm" onClick={bulkFinalize}>Finalizar</Button>
+                  <Button variant="danger" size="sm" onClick={bulkDelete}>
+                    <Trash2 size={12} /> Excluir
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="hidden md:block">
             <Table>
               <TableHead>
                 <tr>
+                  <Th className="w-8">
+                    {selectablePending.length > 0 && (
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={() => {
+                          if (allSelected) setSelectedIds(new Set())
+                          else setSelectedIds(new Set(selectablePending.map((p) => p.id)))
+                        }}
+                        className="accent-gray-700 cursor-pointer"
+                      />
+                    )}
+                  </Th>
                   <Th>Medicamento</Th>
                   <Th>Lote</Th>
                   <Th>Validade</Th>
@@ -406,7 +468,7 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
               <TableBody>
                 {paged.length === 0 && (
                   <tr>
-                    <Td colSpan={7} className="text-center text-gray-400 py-10">
+                    <Td colSpan={8} className="text-center text-gray-400 py-10">
                       {hasFilter
                         ? 'Nenhuma pendência encontrada com esses filtros.'
                         : 'Nenhuma pendência de estoque registrada.'}
@@ -417,6 +479,16 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
                   const item = p.items[0]
                   return (
                     <Tr key={p.id}>
+                      <Td>
+                        {p.status === 'PENDING' && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(p.id)}
+                            onChange={() => toggleId(p.id)}
+                            className="accent-gray-700 cursor-pointer"
+                          />
+                        )}
+                      </Td>
                       <Td>
                         <span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={item?.product}>
                           {item?.product}
@@ -464,6 +536,14 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
                 return (
                   <MobileCard key={p.id}>
                     <div className="flex items-start gap-2">
+                      {p.status === 'PENDING' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(p.id)}
+                          onChange={() => toggleId(p.id)}
+                          className="accent-gray-700 cursor-pointer mt-1 h-4 w-4 shrink-0"
+                        />
+                      )}
                       <span className="font-semibold text-gray-900 break-words min-w-0 flex-1" title={item?.product}>{item?.product}</span>
                       <PrescriptionStatusBadge status={p.status} />
                     </div>

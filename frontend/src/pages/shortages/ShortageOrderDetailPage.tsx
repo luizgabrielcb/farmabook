@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Trash2, Pencil, CheckCircle, Settings2, X, Plus } from 'lucide-react'
 import { getShortageOrder, updateShortageOrder, deleteShortageOrder, markShortageOrderAsOrdered, addShortageOrderItem } from '@/api/shortageOrders'
 import { updateShortage, deleteShortage, markShortageAsOrdered } from '@/api/shortages'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
@@ -47,6 +46,7 @@ export function ShortageOrderDetailPage() {
   const withPin = useWithPin()
   const confirm = useConfirm()
 
+  const [tab, setTab] = useState<'itens' | 'historico'>('itens')
   const [editingShortage, setEditingShortage] = useState<Shortage | null>(null)
   const [editForm, setEditForm] = useState<EditForm | null>(null)
   const [addOpen, setAddOpen] = useState(false)
@@ -198,66 +198,101 @@ export function ShortageOrderDetailPage() {
   const allSelected = selectablePending.length > 0 && selectablePending.every((s) => selectedIds.has(s.id))
   const someSelected = selectedIds.size > 0
 
+  const tabs: { value: 'itens' | 'historico'; label: string; count?: number }[] = [
+    { value: 'itens', label: 'Itens', count: order.shortages.length },
+    { value: 'historico', label: 'Histórico' },
+  ]
+
   return (
-    <div>
-      <PageHeader
-        title={`Pedido de falta — ${order.distributorName}`}
-        description={`Caderno de ${caderno} · Criado por ${order.createdByName} em ${formatDate(order.createdAt)}`}
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <ArrowLeft size={13} /> Voltar
-            </Button>
-            {isPending && (
-              <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
-                <Button variant="ghost" size="sm" onClick={openEditOrder}>
-                  <Settings2 size={13} /> Editar
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleMarkOrdered} disabled={markOrderedMutation.isPending}>
-                  {markOrderedMutation.isPending ? 'Salvando...' : 'Marcar como pedido'}
-                </Button>
-                <Button variant="danger" size="sm" onClick={handleDeleteOrder} disabled={deleteMutation.isPending}>
-                  <Trash2 size={13} /> Excluir
-                </Button>
+    <div className="p-4 sm:p-6">
+      <button
+        onClick={handleBack}
+        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4 cursor-pointer transition-colors"
+      >
+        <ArrowLeft size={15} /> Voltar
+      </button>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4 items-start">
+        {/* MAIN CARD */}
+        <div className="bg-white border border-gray-150 rounded-2xl shadow-sm overflow-hidden">
+          {/* header */}
+          <div className="p-5 border-b border-gray-150">
+            <div className="flex items-start gap-3">
+              <p className="flex-1 min-w-0 font-bold text-gray-900 text-[17px]">{order.distributorName}</p>
+              <ShortageOrderStatusBadge status={order.status} />
+            </div>
+            <p className="text-xs text-gray-400 mt-1">
+              Caderno de {caderno} · Criado por {order.createdByName} em {formatDate(order.createdAt)}
+            </p>
+            {order.observations && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Observações</span>
+                <p className="text-sm text-gray-700 mt-1 break-words">{order.observations}</p>
               </div>
             )}
           </div>
-        }
-      />
 
-      <div className="p-4 sm:p-6 space-y-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
-          <div>
-            <span className="text-gray-500 text-xs uppercase tracking-wide">Status</span>
-            <div className="mt-1"><ShortageOrderStatusBadge status={order.status} /></div>
+          {/* tabs */}
+          <div className="flex gap-1 px-4 border-b border-gray-150">
+            {tabs.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer ${
+                  tab === t.value
+                    ? 'border-brand-600 text-brand-700'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {t.label}
+                {t.count != null && (
+                  <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                    tab === t.value ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>{t.count}</span>
+                )}
+              </button>
+            ))}
           </div>
-          <div>
-            <span className="text-gray-500 text-xs uppercase tracking-wide">Distribuidora</span>
-            <p className="mt-1 font-medium text-gray-900">{order.distributorName}</p>
-          </div>
-          <div>
-            <span className="text-gray-500 text-xs uppercase tracking-wide">Caderno</span>
-            <p className="mt-1 font-medium text-gray-900">{caderno}</p>
-          </div>
-          {order.orderedAt && (
-            <div>
-              <span className="text-gray-500 text-xs uppercase tracking-wide">Pedido por</span>
-              <p className="mt-1 text-gray-700">{order.orderedByName} em {formatDate(order.orderedAt)}</p>
+
+          {/* ===== HISTÓRICO TAB ===== */}
+          {tab === 'historico' && (
+            <div className="p-5 space-y-5 text-sm">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-24 text-gray-500 shrink-0">Criado</span>
+                  <span className="text-gray-900 font-medium">{order.createdByName}</span>
+                  <span className="text-gray-500 text-[13px]">{formatDate(order.createdAt)}</span>
+                </div>
+                {order.orderedAt && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-24 text-gray-500 shrink-0">Pedido</span>
+                    <span className="text-gray-900 font-medium">{order.orderedByName}</span>
+                    <span className="text-gray-500 text-[13px]">{formatDate(order.orderedAt)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="pt-4 border-t border-gray-150">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Auditoria dos itens</span>
+                <div className="mt-3 space-y-4">
+                  {order.shortages.map((s) => (
+                    <div key={s.id}>
+                      <p className="font-semibold text-gray-900 mb-1 break-words">{s.product}</p>
+                      <div className="flex flex-col gap-0.5 text-[13px] text-gray-600">
+                        <span><span className="text-gray-400">Registrado:</span> {s.createdByName} · {formatDate(s.createdAt)}</span>
+                        {s.orderedByName && <span><span className="text-gray-400">Pedido:</span> {s.orderedByName} · {formatDate(s.orderedAt)}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
-          {order.observations && (
-            <div className="col-span-2 lg:col-span-4">
-              <span className="text-gray-500 text-xs uppercase tracking-wide">Observações</span>
-              <p className="mt-1 text-gray-700">{order.observations}</p>
-            </div>
-          )}
-        </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-200">
-            <span className="text-sm font-medium text-gray-900">
-              Itens em falta ({order.shortages.length})
-            </span>
+          {/* ===== ITENS TAB ===== */}
+          {tab === 'itens' && (
+          <div>
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-150">
+            <span className="text-xs text-gray-400">{order.shortages.length} item(s)</span>
             {isPending && (
               <Button variant="secondary" size="sm" onClick={openAdd}>
                 <Plus size={12} /> Adicionar item
@@ -422,6 +457,37 @@ export function ShortageOrderDetailPage() {
               </MobileCard>
             ))}
           </CardList>
+          </div>
+          )}
+        </div>
+
+        {/* SIDEBAR — AÇÕES RÁPIDAS */}
+        <div className="bg-white border border-gray-150 rounded-2xl shadow-sm p-4">
+          <p className="text-sm font-semibold text-gray-900 mb-3">Ações rápidas</p>
+          <div className="flex flex-col gap-2">
+            {isPending ? (
+              <>
+                <Button variant="secondary" size="md" className="w-full" onClick={handleMarkOrdered} disabled={markOrderedMutation.isPending}>
+                  {markOrderedMutation.isPending ? 'Salvando...' : 'Marcar como pedido'}
+                </Button>
+                <div className="h-px bg-gray-100 my-1" />
+                <Button variant="secondary" size="md" className="w-full" onClick={openEditOrder}>
+                  <Settings2 size={14} /> Editar
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  className="w-full bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
+                  onClick={handleDeleteOrder}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 size={14} /> Excluir
+                </Button>
+              </>
+            ) : (
+              <div className="text-center text-sm font-medium text-brand-700 bg-brand-50 rounded-md py-2">Pedido concluído</div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -94,7 +94,7 @@ export function CreateCompoundingDialog({ open, onClose, onSuccess }: Props) {
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Cliente</label>
-            <CustomerSearch value={customer} onChange={setCustomer} onQuickAdd={() => setQuickAddOpen(true)} />
+            <CustomerSearch value={customer} onChange={setCustomer} onQuickAdd={(q) => { setNewCustomerName(q); setQuickAddOpen(true) }} />
             {customer?.phoneNumber && (
               <p className="text-xs text-gray-400 mt-1">{customer.phoneNumber}</p>
             )}
