@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardField, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Pagination } from '@/components/shared/Pagination'
 import { OrderStatusBadge, OrderPaymentStatusBadge } from '@/components/shared/StatusBadge'
@@ -80,7 +81,7 @@ function OrdersList() {
         }
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             {STATUS_OPTIONS.map((s) => (
@@ -160,6 +161,7 @@ function OrdersList() {
             </div>
           ) : (
             <>
+              <div className="hidden md:block">
               <Table>
                 <TableHead>
                   <tr>
@@ -201,6 +203,27 @@ function OrdersList() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+
+              <CardList>
+                {paged.length === 0 && (
+                  <CardEmpty>
+                    {hasFilter ? 'Nenhuma encomenda encontrada com esses filtros.' : 'Nenhuma encomenda registrada.'}
+                  </CardEmpty>
+                )}
+                {paged.map((o) => (
+                  <MobileCard key={o.id} onClick={() => navigate(`/orders/${o.id}`)}>
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-gray-900 break-words min-w-0 flex-1" title={o.customerName}>{o.customerName}</span>
+                      <OrderStatusBadge status={o.status} />
+                    </div>
+                    <CardField label="Pagamento"><OrderPaymentStatusBadge status={o.paymentStatus} /></CardField>
+                    <CardField label="Itens">{o.items?.length ?? 0} item(s)</CardField>
+                    <CardField label="Criado">{o.createdByName} · {formatDateShort(o.createdAt)}</CardField>
+                  </MobileCard>
+                ))}
+              </CardList>
+
               <Pagination
                 page={page}
                 totalPages={totalPages || 1}

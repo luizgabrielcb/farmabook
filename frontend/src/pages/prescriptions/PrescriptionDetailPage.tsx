@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardActions, IconAction } from '@/components/ui/mobile-card'
 import { PrescriptionStatusBadge, PrescriptionItemStatusBadge } from '@/components/shared/StatusBadge'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
 import { CustomerSearch } from '@/components/shared/CustomerSearch'
@@ -208,7 +209,7 @@ export function PrescriptionDetailPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <button
         onClick={() => navigate('/prescriptions')}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4 cursor-pointer transition-colors"
@@ -287,6 +288,7 @@ export function PrescriptionDetailPage() {
                 </div>
               )}
 
+              <div className="hidden md:block">
               <Table>
                 <TableHead>
                   <tr>
@@ -360,6 +362,41 @@ export function PrescriptionDetailPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+
+              <CardList>
+                {prescription.items.length === 0 && (
+                  <p className="text-center text-gray-400 py-8 text-sm">Nenhum medicamento cadastrado.</p>
+                )}
+                {prescription.items.map((item) => (
+                  <MobileCard key={item.id}>
+                    <div className="flex items-start gap-2">
+                      {isPending && item.status === 'PENDING' && (
+                        <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelectItem(item.id)} className="accent-gray-700 cursor-pointer mt-1 h-4 w-4 shrink-0" />
+                      )}
+                      <span className="font-medium text-gray-900 break-words min-w-0 flex-1">{item.product}</span>
+                      <PrescriptionItemStatusBadge status={item.status} />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-sm text-gray-400">
+                      <span>Qtd: <span className="text-gray-700">{item.quantity}</span></span>
+                      <span>Lote: <span className="text-gray-700">{item.batch}</span></span>
+                      <span>Val: <span className="text-gray-700">{item.expiry}</span></span>
+                    </div>
+                    {item.receivedByName && (
+                      <div className="text-sm text-gray-400">Recebido por: <span className="text-gray-700">{item.receivedByName}</span></div>
+                    )}
+                    {isPending && item.status === 'PENDING' && (
+                      <CardActions>
+                        <Button variant="ghost" className="h-11 px-3" onClick={() => withPin(() => markItemAsReceived(id!, item.id).then(invalidate))}>
+                          Marcar recebido
+                        </Button>
+                        <IconAction label="Editar" onClick={() => openEditItem(item)}><Pencil size={17} /></IconAction>
+                        <IconAction label="Excluir" className="text-red-500" onClick={() => handleDeleteItem(item)} disabled={deleteItemMutation.isPending}><Trash2 size={17} /></IconAction>
+                      </CardActions>
+                    )}
+                  </MobileCard>
+                ))}
+              </CardList>
             </div>
           )}
 

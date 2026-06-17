@@ -1,19 +1,33 @@
 import * as Popover from '@radix-ui/react-popover'
 import { History } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export interface AuditRow { label: string; value: string }
 
-export function AuditButton({ rows, title = 'Auditoria' }: { rows: AuditRow[]; title?: string }) {
+export function AuditButton({
+  rows,
+  title = 'Auditoria',
+  triggerClassName,
+  iconSize = 14,
+}: {
+  rows: AuditRow[]
+  title?: string
+  triggerClassName?: string
+  iconSize?: number
+}) {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
           type="button"
-          className="text-gray-400 hover:text-gray-700 cursor-pointer p-1 rounded transition-colors"
+          className={cn(
+            'text-gray-400 hover:text-gray-700 cursor-pointer p-1 rounded transition-colors',
+            triggerClassName,
+          )}
           title="Ver histórico"
           onClick={(e) => e.stopPropagation()}
         >
-          <History size={14} />
+          <History size={iconSize} />
         </button>
       </Popover.Trigger>
       <Popover.Portal>

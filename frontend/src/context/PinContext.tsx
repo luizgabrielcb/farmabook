@@ -31,7 +31,7 @@ export function PinProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const pendingRef = useRef<Pending | null>(null)
-  const submitRef = useRef<() => void>(() => {})
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   if (!containerRef.current) {
@@ -48,29 +48,16 @@ export function PinProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { pinState.open = open }, [open])
 
-  // inert em todos os filhos do body exceto o container do PIN
+  // inert em todos os filhos do body exceto o container do PIN; foca o input
+  // do PIN para abrir o teclado do dispositivo
   useEffect(() => {
     if (!open) return
-    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     const siblings = Array.from(document.body.children).filter(
       (c) => c.id !== PIN_PORTAL_ID,
     ) as HTMLElement[]
     siblings.forEach((el) => el.setAttribute('inert', ''))
+    inputRef.current?.focus()
     return () => { siblings.forEach((el) => el.removeAttribute('inert')) }
-  }, [open])
-
-  // Teclado em capture phase — bloqueia tudo atrás
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) {
-      e.stopPropagation()
-      e.preventDefault()
-      if (e.key >= '0' && e.key <= '9') setPin((p) => (p.length < 4 ? p + e.key : p))
-      else if (e.key === 'Backspace' || e.key === 'Delete') setPin((p) => p.slice(0, -1))
-      else if (e.key === 'Enter') submitRef.current()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
   }, [open])
 
   async function submit() {
@@ -80,6 +67,7 @@ export function PinProvider({ children }: { children: ReactNode }) {
     try {
       await validatePin(pin)
       setActivePin(pin)
+      inputRef.current?.blur()
       setOpen(false)
       setPin('')
       pendingRef.current?.resolve()
@@ -92,9 +80,8 @@ export function PinProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  useEffect(() => { submitRef.current = submit })
-
   function cancel() {
+    inputRef.current?.blur()
     setOpen(false)
     setPin('')
     setError('')
@@ -121,24 +108,46 @@ export function PinProvider({ children }: { children: ReactNode }) {
         background: 'white', borderRadius: 16,
         border: '1px solid #e3e8ed',
         boxShadow: '0 24px 48px -12px rgba(20,26,32,0.18)',
-        width: 224, padding: 24,
+        width: 'min(300px, calc(100vw - 40px))', padding: 20,
       }}>
         <p style={{ fontSize: 14, fontWeight: 500, color: '#111827', textAlign: 'center', marginBottom: 16 }}>
           Digite a sua senha:
         </p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} style={{
-              width: 36, height: 36, borderRadius: 8,
-              border: pin.length > i ? '2px solid #0d8a7e' : '2px solid #e3e8ed',
-              background: pin.length > i ? '#f0fdfa' : 'white',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 500, color: '#0e6e66',
-            }}>
-              {pin[i] ? '•' : ''}
-            </div>
-          ))}
+        <div
+          style={{ position: 'relative', marginBottom: 16, cursor: 'text' }}
+          onClick={() => inputRef.current?.focus()}
+        >
+          {/* Input real e transparente: tocar abre o teclado do celular */}
+          <input
+            ref={inputRef}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
+            type="tel"
+            inputMode="numeric"
+            autoComplete="off"
+            autoFocus
+            aria-label="Senha"
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              opacity: 0, border: 'none', background: 'transparent',
+              fontSize: 16, // evita zoom automático no iOS
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, pointerEvents: 'none' }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{
+                width: 36, height: 44, borderRadius: 8,
+                border: pin.length > i ? '2px solid #0d8a7e' : '2px solid #e3e8ed',
+                background: pin.length > i ? '#f0fdfa' : 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 500, color: '#0e6e66',
+              }}>
+                {pin[i] ? '•' : ''}
+              </div>
+            ))}
+          </div>
         </div>
 
         {error && (
@@ -152,12 +161,10 @@ export function PinProvider({ children }: { children: ReactNode }) {
             type="button"
             onClick={cancel}
             style={{
-              flex: 1, height: 32, borderRadius: 8,
+              flex: 1, height: 44, borderRadius: 8,
               border: '1px solid #d8dee5', background: 'white',
               fontSize: 14, color: '#4f5a66', cursor: 'pointer',
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = '#f9fafb' }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'white' }}
           >
             Cancelar
           </button>
@@ -166,7 +173,7 @@ export function PinProvider({ children }: { children: ReactNode }) {
             onClick={submit}
             disabled={pin.length === 0 || loading}
             style={{
-              flex: 1, height: 32, borderRadius: 8, border: 'none',
+              flex: 1, height: 44, borderRadius: 8, border: 'none',
               background: pin.length === 0 || loading ? '#97a2ad' : '#0d8a7e',
               fontSize: 14, fontWeight: 600, color: 'white',
               cursor: pin.length === 0 || loading ? 'not-allowed' : 'pointer',

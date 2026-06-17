@@ -104,6 +104,91 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
+    // --- POST items ---
+
+    @Test
+    @Sql("/sql/shortage-order/insert-one-shortage-order.sql")
+    @DisplayName("POST /shortage-orders/{id}/items should return 201 and add a shortage to the order when successful")
+    void addItem_ReturnsCreated_WhenSuccessful() {
+        var request = fileUtils.readResourceFile("shortage-order/post-request-shortage-order-item.json");
+
+        RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(URL + "/" + SHORTAGE_ORDER_ID + "/items")
+                .then()
+                .log().all()
+                .statusCode(201);
+
+        var shortages = shortageRepository.findAllByShortageOrderId(UUID.fromString(SHORTAGE_ORDER_ID));
+        assertThat(shortages).hasSize(2);
+        assertThat(shortages).anyMatch(s -> s.getProduct().equals("Amoxicilina 875mg")
+                && s.getStatus() == ShortageStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("POST /shortage-orders/{id}/items should return 404 when order is not found")
+    void addItem_ReturnsNotFound_WhenOrderNotFound() {
+        var request = fileUtils.readResourceFile("shortage-order/post-request-shortage-order-item.json");
+        var expected = fileUtils.readResourceFile("shortage-order/put-response-shortage-order-not-found-404.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(URL + "/" + NONEXISTENT_ID + "/items")
+                .then()
+                .log().all()
+                .statusCode(404)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("POST /shortage-orders/{id}/items should return 401 when PIN is invalid")
+    void addItem_ReturnsUnauthorized_WhenPinIsInvalid() {
+        var request = fileUtils.readResourceFile("shortage-order/post-request-shortage-order-item.json");
+        var expected = fileUtils.readResourceFile("shortage-order/post-response-shortage-order-unauthorized-401.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", "9999")
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(URL + "/" + SHORTAGE_ORDER_ID + "/items")
+                .then()
+                .log().all()
+                .statusCode(401)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    @Test
+    @Sql("/sql/shortage-order/insert-one-shortage-order-ordered.sql")
+    @DisplayName("POST /shortage-orders/{id}/items should return 409 when order is already ORDERED")
+    void addItem_ReturnsConflict_WhenOrderIsAlreadyOrdered() {
+        var request = fileUtils.readResourceFile("shortage-order/post-request-shortage-order-item.json");
+        var expected = fileUtils.readResourceFile("shortage-order/put-response-shortage-order-already-ordered-409.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(URL + "/" + SHORTAGE_ORDER_ID + "/items")
+                .then()
+                .log().all()
+                .statusCode(409)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
     // --- GET (list) ---
 
     @Test

@@ -187,16 +187,10 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-medium text-gray-700 block mb-1">
-                Observações <span className="text-gray-400">(opcional)</span>
-              </label>
-              <Input
-                value={observations}
-                onChange={(e) => setObservations(e.target.value)}
-                placeholder="Observações sobre a encomenda..."
-                maxLength={500}
-                autoComplete="off"
-              />
+              <label className="text-xs font-medium text-gray-700 block mb-1">Status de pagamento</label>
+              <Select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as OrderPaymentStatus)}>
+                {PAYMENT_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </Select>
             </div>
             <div className="w-36">
               <label className={`text-xs font-medium block mb-1 ${anyItemHasPrice ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -210,11 +204,17 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
             </div>
           </div>
 
-          <div className="w-44">
-            <label className="text-xs font-medium text-gray-700 block mb-1">Status de pagamento</label>
-            <Select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value as OrderPaymentStatus)}>
-              {PAYMENT_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </Select>
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">
+              Observações <span className="text-gray-400">(opcional)</span>
+            </label>
+            <Input
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              placeholder="Observações sobre a encomenda..."
+              maxLength={500}
+              autoComplete="off"
+            />
           </div>
 
           {createMutation.isError && <ErrorMessage error={createMutation.error} />}

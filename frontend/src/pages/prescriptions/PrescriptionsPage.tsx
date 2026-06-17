@@ -14,6 +14,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardField, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Pagination } from '@/components/shared/Pagination'
 import { PrescriptionStatusBadge } from '@/components/shared/StatusBadge'
@@ -65,7 +66,7 @@ export function PrescriptionsPage() {
         }
       />
 
-      <div className="px-6 pt-4">
+      <div className="px-4 sm:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200">
           {([
             { value: 'customers', label: 'Clientes' },
@@ -86,7 +87,7 @@ export function PrescriptionsPage() {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {section === 'customers'
           ? <CustomersPanel items={customerItems} isLoading={isLoading} createOpen={createOpen} setCreateOpen={setCreateOpen} />
           : <StockPanel items={stockItems} isLoading={isLoading} createOpen={createOpen} setCreateOpen={setCreateOpen} />
@@ -187,6 +188,7 @@ function CustomersPanel({ items, isLoading, createOpen, setCreateOpen }: PanelPr
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
           <>
+            <div className="hidden md:block">
             <Table>
               <TableHead>
                 <tr>
@@ -229,6 +231,24 @@ function CustomersPanel({ items, isLoading, createOpen, setCreateOpen }: PanelPr
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            <CardList>
+              {paged.length === 0 && (
+                <CardEmpty>{hasFilter ? 'Nenhuma pendência encontrada com esses filtros.' : 'Nenhuma pendência de receita registrada.'}</CardEmpty>
+              )}
+              {paged.map((p) => (
+                <MobileCard key={p.id} onClick={() => navigate(`/prescriptions/${p.id}`)}>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-gray-900 break-words min-w-0 flex-1" title={p.customerName ?? undefined}>{p.customerName}</span>
+                    <PrescriptionStatusBadge status={p.status} />
+                  </div>
+                  <CardField label="Medicamentos">{p.items?.length ?? 0} medicamento(s)</CardField>
+                  <CardField label="Criado">{p.createdByName} · {formatDateShort(p.createdAt)}</CardField>
+                </MobileCard>
+              ))}
+            </CardList>
+
             <Pagination page={page} totalPages={totalPages || 1} totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
           </>
         )}
@@ -370,6 +390,7 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
           <>
+            <div className="hidden md:block">
             <Table>
               <TableHead>
                 <tr>
@@ -432,6 +453,47 @@ function StockPanel({ items, isLoading, createOpen, setCreateOpen }: PanelProps)
                 })}
               </TableBody>
             </Table>
+            </div>
+
+            <CardList>
+              {paged.length === 0 && (
+                <CardEmpty>{hasFilter ? 'Nenhuma pendência encontrada com esses filtros.' : 'Nenhuma pendência de estoque registrada.'}</CardEmpty>
+              )}
+              {paged.map((p) => {
+                const item = p.items[0]
+                return (
+                  <MobileCard key={p.id}>
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-gray-900 break-words min-w-0 flex-1" title={item?.product}>{item?.product}</span>
+                      <PrescriptionStatusBadge status={p.status} />
+                    </div>
+                    <CardField label="Lote">{item?.batch}</CardField>
+                    <CardField label="Validade">{item?.expiry}</CardField>
+                    <CardField label="Criado">{p.createdByName} · {formatDateShort(p.createdAt)}</CardField>
+                    <CardActions>
+                      {p.status === 'PENDING' && (
+                        <>
+                          <Button variant="ghost" className="h-11 px-3 text-blue-500" onClick={() => handleMarkReceived(p)}>
+                            <CheckCircle size={15} /> Finalizado
+                          </Button>
+                          <IconAction label="Editar" onClick={() => openEdit(p)}><Pencil size={17} /></IconAction>
+                          <IconAction label="Excluir" className="text-red-500" onClick={() => handleDelete(p)}><Trash2 size={17} /></IconAction>
+                        </>
+                      )}
+                      <AuditButton
+                        triggerClassName="grid place-items-center h-11 w-11 p-0"
+                        iconSize={18}
+                        rows={[
+                          { label: 'Registrado', value: `${p.createdByName} · ${formatDate(p.createdAt)}` },
+                          { label: 'Recebido', value: item?.receivedByName ? `${item.receivedByName} · ${formatDate(item.receivedAt)}` : '—' },
+                        ]}
+                      />
+                    </CardActions>
+                  </MobileCard>
+                )
+              })}
+            </CardList>
+
             <Pagination page={page} totalPages={totalPages || 1} totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
           </>
         )}
