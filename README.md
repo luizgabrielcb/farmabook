@@ -39,7 +39,7 @@ Sistema de gestão de encomendas, faltas, manipulações e receitas para farmác
 ## 📸 Demonstração
 
 > _Em breve..._
-
+<img width="1513" height="689" alt="Captura de Tela 2026-06-17 às 16 31 45" src="https://github.com/user-attachments/assets/d7f2a8bb-b0aa-4496-abc1-1265eab908f5" />
 <!--
   TODO — substituir pelos arquivos reais:
   - Hospede as imagens em docs/screenshots/ no próprio repositório
