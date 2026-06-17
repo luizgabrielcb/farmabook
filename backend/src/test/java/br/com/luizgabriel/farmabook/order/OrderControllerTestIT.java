@@ -820,4 +820,168 @@ class OrderControllerTestIT extends IntegrationTestConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
+
+    // --- PATCH payment/mark-as-paid ---
+
+    @Test
+    @Sql("/sql/order/insert-one-order-pending.sql")
+    @DisplayName("PATCH .../payment/mark-as-paid should return 204 and set item payment to PAID when successful")
+    void markItemPaymentAsPaid_ReturnsNoContent_WhenSuccessful() {
+        RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-paid")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        var item = orderItemRepository.findById(ITEM_ID).orElseThrow();
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        assertThat(item.getPaymentChangedByName()).isEqualTo("User Teste");
+        assertThat(item.getPaymentChangedAt()).isNotNull();
+    }
+
+    @Test
+    @Sql("/sql/order/insert-one-order-payment-noted.sql")
+    @DisplayName("PATCH .../payment/mark-as-paid should return 409 when payment is NOTED")
+    void markItemPaymentAsPaid_ReturnsConflict_WhenNoted() {
+        var expected = fileUtils.readResourceFile("order/patch-response-payment-paid-conflict-noted-409.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-paid")
+                .then()
+                .log().all()
+                .statusCode(409)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("PATCH .../payment/mark-as-paid should return 404 when order is not found")
+    void markItemPaymentAsPaid_ReturnsNotFound_WhenOrderNotFound() {
+        var expected = fileUtils.readResourceFile("order/get-response-order-not-found-404.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + NONEXISTENT_ID + "/items/" + ITEM_ID + "/payment/mark-as-paid")
+                .then()
+                .log().all()
+                .statusCode(404)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    @Test
+    @Sql("/sql/order/insert-one-order-pending.sql")
+    @DisplayName("PATCH .../payment/mark-as-paid should return 401 when PIN is invalid")
+    void markItemPaymentAsPaid_ReturnsUnauthorized_WhenPinIsInvalid() {
+        var expected = fileUtils.readResourceFile("order/post-response-order-unauthorized-401.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", "9999")
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-paid")
+                .then()
+                .log().all()
+                .statusCode(401)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    // --- PATCH payment/mark-as-make-note ---
+
+    @Test
+    @Sql("/sql/order/insert-one-order-pending.sql")
+    @DisplayName("PATCH .../payment/mark-as-make-note should return 204 and set item payment to MAKE_NOTE when successful")
+    void markItemPaymentAsMakeNote_ReturnsNoContent_WhenSuccessful() {
+        RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-make-note")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        var item = orderItemRepository.findById(ITEM_ID).orElseThrow();
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.MAKE_NOTE);
+        assertThat(item.getPaymentChangedByName()).isEqualTo("User Teste");
+    }
+
+    // --- PATCH payment/mark-as-noted ---
+
+    @Test
+    @Sql("/sql/order/insert-one-order-payment-make-note.sql")
+    @DisplayName("PATCH .../payment/mark-as-noted should return 204 and set item payment to NOTED when current is MAKE_NOTE")
+    void markItemPaymentAsNoted_ReturnsNoContent_WhenSuccessful() {
+        RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-noted")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        var item = orderItemRepository.findById(ITEM_ID).orElseThrow();
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.NOTED);
+    }
+
+    @Test
+    @Sql("/sql/order/insert-one-order-pending.sql")
+    @DisplayName("PATCH .../payment/mark-as-noted should return 409 when current is not MAKE_NOTE")
+    void markItemPaymentAsNoted_ReturnsConflict_WhenNotMakeNote() {
+        var expected = fileUtils.readResourceFile("order/patch-response-payment-noted-conflict-409.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-noted")
+                .then()
+                .log().all()
+                .statusCode(409)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    // --- PATCH payment/mark-as-to-pay ---
+
+    @Test
+    @Sql("/sql/order/insert-one-order-payment-make-note.sql")
+    @DisplayName("PATCH .../payment/mark-as-to-pay should return 204 and revert item payment to TO_PAY when current is MAKE_NOTE")
+    void markItemPaymentAsToPay_ReturnsNoContent_WhenSuccessful() {
+        RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-to-pay")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        var item = orderItemRepository.findById(ITEM_ID).orElseThrow();
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.TO_PAY);
+    }
+
+    @Test
+    @Sql("/sql/order/insert-one-order-pending.sql")
+    @DisplayName("PATCH .../payment/mark-as-to-pay should return 409 when current is not MAKE_NOTE")
+    void markItemPaymentAsToPay_ReturnsConflict_WhenNotMakeNote() {
+        var expected = fileUtils.readResourceFile("order/patch-response-payment-to-pay-conflict-409.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", AUTH_PIN)
+                .when()
+                .patch(URL + "/" + ORDER_ID + "/items/" + ITEM_ID + "/payment/mark-as-to-pay")
+                .then()
+                .log().all()
+                .statusCode(409)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
 }

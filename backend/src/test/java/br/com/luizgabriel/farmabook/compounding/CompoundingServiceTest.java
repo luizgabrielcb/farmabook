@@ -598,4 +598,50 @@ class CompoundingServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
+
+    // ---- markAsToPay ----
+
+    @Test
+    @DisplayName("markAsToPay should revert payment status to TO_PAY when current is MAKE_NOTE")
+    void markAsToPay_SetsToPayStatus_WhenMakeNote() {
+        var compounding = utils.newCompoundingWithPaymentStatus(PaymentStatus.MAKE_NOTE);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
+        BDDMockito.when(repository.save(compounding)).thenReturn(compounding);
+
+        service.markAsToPay(compounding.getId(), actor);
+
+        assertThat(compounding.getPaymentStatus()).isEqualTo(PaymentStatus.TO_PAY);
+        BDDMockito.then(repository).should().save(compounding);
+    }
+
+    @Test
+    @DisplayName("markAsToPay should throw ConflictException when current is not MAKE_NOTE")
+    void markAsToPay_ThrowsConflictException_WhenNotMakeNote() {
+        var compounding = utils.newCompoundingWithPaymentStatus(PaymentStatus.PAID);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findById(compounding.getId())).thenReturn(Optional.of(compounding));
+
+        assertThatThrownBy(() -> service.markAsToPay(compounding.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        assertThat(compounding.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
+    }
+
+    @Test
+    @DisplayName("markAsToPay should throw NotFoundException when compounding is not found")
+    void markAsToPay_ThrowsNotFoundException_WhenNotFound() {
+        var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markAsToPay(id, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
+    }
 }

@@ -1,6 +1,9 @@
 package br.com.luizgabriel.farmabook.notification;
 
+import br.com.luizgabriel.farmabook.commons.CustomerUtils;
 import br.com.luizgabriel.farmabook.commons.NotificationUtils;
+import br.com.luizgabriel.farmabook.compounding.Compounding;
+import br.com.luizgabriel.farmabook.customer.Customer;
 import br.com.luizgabriel.farmabook.customer.CustomerService;
 import br.com.luizgabriel.farmabook.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -110,6 +113,102 @@ class NotificationServiceTest {
                 .isInstanceOf(NotFoundException.class);
 
         BDDMockito.then(notificationRepository).should(Mockito.never()).save(ArgumentMatchers.any(Notification.class));
+    }
+
+    // --- generateForCompoundingReceived ---
+
+    @Test
+    @DisplayName("generateForCompoundingReceived should persist notification and return response when successful")
+    void generateForCompoundingReceived_ReturnsNotificationGetResponse_WhenSuccessful() {
+        var compounding = newCompounding();
+        var customer = utils.newCustomer();
+        var saved = utils.newNotification(utils.newOrder(), customer);
+        var response = utils.newNotificationGetResponse(saved);
+
+        BDDMockito.when(customerService.findByIdOrThrowNotFound(compounding.getCustomerId())).thenReturn(customer);
+        BDDMockito.when(notificationRepository.save(ArgumentMatchers.any(Notification.class))).thenReturn(saved);
+        BDDMockito.when(notificationMapper.toNotificationGetResponse(saved)).thenReturn(response);
+
+        var result = service.generateForCompoundingReceived(compounding);
+
+        assertThat(result).contains(response);
+
+        var captor = ArgumentCaptor.forClass(Notification.class);
+        BDDMockito.then(notificationRepository).should().save(captor.capture());
+        assertThat(captor.getValue().getMessage()).contains("manipulação");
+    }
+
+    @Test
+    @DisplayName("generateForCompoundingReceived should return empty and not persist when customer has no phone")
+    void generateForCompoundingReceived_ReturnsEmpty_WhenCustomerHasNoPhone() {
+        var compounding = newCompounding();
+        var customer = Customer.builder()
+                .id(CustomerUtils.CUSTOMER_ID)
+                .name("Test Customer")
+                .phoneNumber(null)
+                .build();
+
+        BDDMockito.when(customerService.findByIdOrThrowNotFound(compounding.getCustomerId())).thenReturn(customer);
+
+        var result = service.generateForCompoundingReceived(compounding);
+
+        assertThat(result).isEmpty();
+        BDDMockito.then(notificationRepository).should(Mockito.never()).save(ArgumentMatchers.any(Notification.class));
+    }
+
+    @Test
+    @DisplayName("generateForCompoundingReceived should throw NotFoundException when customer is not found")
+    void generateForCompoundingReceived_ThrowsNotFoundException_WhenCustomerNotFound() {
+        var compounding = newCompounding();
+
+        BDDMockito.when(customerService.findByIdOrThrowNotFound(compounding.getCustomerId()))
+                .thenThrow(new NotFoundException("Customer not found"));
+
+        assertThatThrownBy(() -> service.generateForCompoundingReceived(compounding))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(notificationRepository).should(Mockito.never()).save(ArgumentMatchers.any(Notification.class));
+    }
+
+    // --- findAllByCompoundingId ---
+
+    @Test
+    @DisplayName("findAllByCompoundingId should return a page of notifications when successful")
+    void findAllByCompoundingId_ReturnsPageOfNotifications_WhenSuccessful() {
+        var pageable = Pageable.ofSize(10);
+        var compoundingId = UUID.randomUUID();
+        var notification = utils.newNotification(utils.newOrder(), utils.newCustomer());
+        var response = utils.newNotificationGetResponse(notification);
+        var page = new PageImpl<>(List.of(notification));
+
+        BDDMockito.when(notificationRepository.findAllByCompoundingId(compoundingId, pageable)).thenReturn(page);
+        BDDMockito.when(notificationMapper.toNotificationGetResponse(notification)).thenReturn(response);
+
+        var result = service.findAllByCompoundingId(compoundingId, pageable);
+
+        assertThat(result.getContent()).containsExactly(response);
+    }
+
+    @Test
+    @DisplayName("findAllByCompoundingId should return an empty page when no notifications exist for the compounding")
+    void findAllByCompoundingId_ReturnsEmptyPage_WhenNoNotificationsExist() {
+        var compoundingId = UUID.randomUUID();
+        var pageable = Pageable.ofSize(10);
+
+        BDDMockito.when(notificationRepository.findAllByCompoundingId(compoundingId, pageable)).thenReturn(Page.empty());
+
+        var result = service.findAllByCompoundingId(compoundingId, pageable);
+
+        assertThat(result.getContent()).isEmpty();
+    }
+
+    private Compounding newCompounding() {
+        return Compounding.builder()
+                .id(UUID.fromString("00000000-0000-0000-0000-000000000070"))
+                .customerId(CustomerUtils.CUSTOMER_ID)
+                .customerName("Test Customer")
+                .quantity(2)
+                .build();
     }
 
     @Test

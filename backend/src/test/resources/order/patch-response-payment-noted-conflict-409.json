@@ -1,0 +1,4 @@
+{
+  "message": "Item with id '00000000-0000-0000-0000-000000000011' payment must be MAKE_NOTE to transition to NOTED",
+  "status": 409
+}
