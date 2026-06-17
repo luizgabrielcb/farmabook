@@ -1,0 +1,19 @@
+{
+  "content": [
+    {
+      "product": "Dipirona 500mg",
+      "category": "MEDICAMENTOS",
+  "shortageType": "WANIA",
+      "quantity": 5,
+      "status": "PENDING",
+      "createdByName": "User Teste",
+      "orderedById": null,
+      "orderedByName": null,
+      "orderedAt": null,
+      "costPrice": null,
+      "shortageOrderId": null
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1
+}
