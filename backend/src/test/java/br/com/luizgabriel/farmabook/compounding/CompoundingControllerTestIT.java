@@ -785,4 +785,75 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
+
+    // ---- PATCH /compoundings/{id}/payment/mark-as-to-pay ----
+
+    @Test
+    @Sql("/sql/compounding/insert-one-compounding-make-note.sql")
+    @DisplayName("PATCH /compoundings/{id}/payment/mark-as-to-pay should return 204 and revert to TO_PAY when current is MAKE_NOTE")
+    void markAsToPay_ReturnsNoContent_WhenSuccessful() {
+        RestAssured.given()
+                .header(authPinHeader())
+                .when()
+                .patch(URL + "/00000000-0000-0000-0000-000000000070/payment/mark-as-to-pay")
+                .then()
+                .log().all()
+                .statusCode(204);
+
+        var updated = compoundingRepository.findById(UUID.fromString("00000000-0000-0000-0000-000000000070")).orElseThrow();
+        assertThat(updated.getPaymentStatus()).isEqualTo(PaymentStatus.TO_PAY);
+    }
+
+    @Test
+    @Sql("/sql/compounding/insert-one-compounding-pending.sql")
+    @DisplayName("PATCH /compoundings/{id}/payment/mark-as-to-pay should return 409 when not MAKE_NOTE")
+    void markAsToPay_ReturnsConflict_WhenNotMakeNote() {
+        var body = RestAssured.given()
+                .header(authPinHeader())
+                .when()
+                .patch(URL + "/00000000-0000-0000-0000-000000000070/payment/mark-as-to-pay")
+                .then()
+                .log().all()
+                .statusCode(409)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body)
+                .whenIgnoringPaths("message")
+                .isEqualTo("{\"status\": 409}");
+    }
+
+    @Test
+    @DisplayName("PATCH /compoundings/{id}/payment/mark-as-to-pay should return 404 when not found")
+    void markAsToPay_ReturnsNotFound_WhenNotFound() {
+        var expected = fileUtils.readResourceFile("compounding/patch-response-payment-not-found-404.json");
+
+        var body = RestAssured.given()
+                .header(authPinHeader())
+                .when()
+                .patch(URL + "/" + NONEXISTENT_ID + "/payment/mark-as-to-pay")
+                .then()
+                .log().all()
+                .statusCode(404)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
+
+    @Test
+    @Sql("/sql/compounding/insert-one-compounding-make-note.sql")
+    @DisplayName("PATCH /compoundings/{id}/payment/mark-as-to-pay should return 401 when PIN is invalid")
+    void markAsToPay_ReturnsUnauthorized_WhenPinIsInvalid() {
+        var expected = fileUtils.readResourceFile("compounding/post-response-compounding-unauthorized-401.json");
+
+        var body = RestAssured.given()
+                .header("X-Auth-Pin", "9999")
+                .when()
+                .patch(URL + "/00000000-0000-0000-0000-000000000070/payment/mark-as-to-pay")
+                .then()
+                .log().all()
+                .statusCode(401)
+                .extract().body().asString();
+
+        JsonAssertions.assertThatJson(body).isEqualTo(expected);
+    }
 }

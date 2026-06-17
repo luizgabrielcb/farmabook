@@ -768,4 +768,233 @@ class OrderServiceTest {
         assertThatThrownBy(() -> service.markAllAsDelivered(id, actor))
                 .isInstanceOf(NotFoundException.class);
     }
+
+    // --- markItemPaymentAsPaid ---
+
+    @Test
+    @DisplayName("markItemPaymentAsPaid should set PAID payment status and stamp actor when successful")
+    void markItemPaymentAsPaid_SetsPaidStatus_WhenSuccessful() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        service.markItemPaymentAsPaid(order.getId(), item.getId(), actor);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        assertThat(item.getPaymentChangedById()).isEqualTo(actor.getId());
+        assertThat(item.getPaymentChangedByName()).isEqualTo(actor.getName());
+        assertThat(item.getPaymentChangedAt()).isNotNull();
+        BDDMockito.then(repository).should().save(order);
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsPaid should throw ConflictException when payment is NOTED")
+    void markItemPaymentAsPaid_ThrowsConflictException_WhenNoted() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.NOTED);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markItemPaymentAsPaid(order.getId(), item.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.NOTED);
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsPaid should throw NotFoundException when order is not found")
+    void markItemPaymentAsPaid_ThrowsNotFoundException_WhenOrderNotFound() {
+        var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markItemPaymentAsPaid(id, OrderUtils.ITEM_ID, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsPaid should throw NotFoundException when item is not found")
+    void markItemPaymentAsPaid_ThrowsNotFoundException_WhenItemNotFound() {
+        var order = utils.newOrder();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markItemPaymentAsPaid(order.getId(), UUID.randomUUID(), actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    // --- markItemPaymentAsMakeNote ---
+
+    @Test
+    @DisplayName("markItemPaymentAsMakeNote should set MAKE_NOTE payment status when successful")
+    void markItemPaymentAsMakeNote_SetsMakeNoteStatus_WhenSuccessful() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        service.markItemPaymentAsMakeNote(order.getId(), item.getId(), actor);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.MAKE_NOTE);
+        assertThat(item.getPaymentChangedAt()).isNotNull();
+        BDDMockito.then(repository).should().save(order);
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsMakeNote should throw ConflictException when payment is PAID")
+    void markItemPaymentAsMakeNote_ThrowsConflictException_WhenPaid() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.PAID);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markItemPaymentAsMakeNote(order.getId(), item.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsMakeNote should throw ConflictException when payment is NOTED")
+    void markItemPaymentAsMakeNote_ThrowsConflictException_WhenNoted() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.NOTED);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markItemPaymentAsMakeNote(order.getId(), item.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsMakeNote should throw NotFoundException when order is not found")
+    void markItemPaymentAsMakeNote_ThrowsNotFoundException_WhenOrderNotFound() {
+        var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markItemPaymentAsMakeNote(id, OrderUtils.ITEM_ID, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    // --- markItemPaymentAsNoted ---
+
+    @Test
+    @DisplayName("markItemPaymentAsNoted should set NOTED payment status when current is MAKE_NOTE")
+    void markItemPaymentAsNoted_SetsNotedStatus_WhenMakeNote() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.MAKE_NOTE);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        service.markItemPaymentAsNoted(order.getId(), item.getId(), actor);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.NOTED);
+        assertThat(item.getPaymentChangedAt()).isNotNull();
+        BDDMockito.then(repository).should().save(order);
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsNoted should throw ConflictException when current is not MAKE_NOTE")
+    void markItemPaymentAsNoted_ThrowsConflictException_WhenNotMakeNote() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markItemPaymentAsNoted(order.getId(), item.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.TO_PAY);
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsNoted should throw NotFoundException when order is not found")
+    void markItemPaymentAsNoted_ThrowsNotFoundException_WhenOrderNotFound() {
+        var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markItemPaymentAsNoted(id, OrderUtils.ITEM_ID, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    // --- markItemPaymentAsToPay ---
+
+    @Test
+    @DisplayName("markItemPaymentAsToPay should revert to TO_PAY payment status when current is MAKE_NOTE")
+    void markItemPaymentAsToPay_SetsToPayStatus_WhenMakeNote() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.MAKE_NOTE);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        service.markItemPaymentAsToPay(order.getId(), item.getId(), actor);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.TO_PAY);
+        assertThat(item.getPaymentChangedAt()).isNotNull();
+        BDDMockito.then(repository).should().save(order);
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsToPay should throw ConflictException when current is not MAKE_NOTE")
+    void markItemPaymentAsToPay_ThrowsConflictException_WhenNotMakeNote() {
+        var order = utils.newOrder();
+        var item = order.getItems().getFirst();
+        item.setPaymentStatus(OrderPaymentStatus.PAID);
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markItemPaymentAsToPay(order.getId(), item.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
+
+    @Test
+    @DisplayName("markItemPaymentAsToPay should throw NotFoundException when order is not found")
+    void markItemPaymentAsToPay_ThrowsNotFoundException_WhenOrderNotFound() {
+        var id = UUID.randomUUID();
+        var actor = userUtils.newUser();
+
+        BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markItemPaymentAsToPay(id, OrderUtils.ITEM_ID, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
+    }
 }

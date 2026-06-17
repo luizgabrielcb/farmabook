@@ -2,6 +2,7 @@ package br.com.luizgabriel.farmabook.shortage;
 
 import br.com.luizgabriel.farmabook.commons.ShortageOrderUtils;
 import br.com.luizgabriel.farmabook.commons.ShortageUtils;
+import br.com.luizgabriel.farmabook.commons.UserUtils;
 import br.com.luizgabriel.farmabook.exception.ConflictException;
 import br.com.luizgabriel.farmabook.exception.NotFoundException;
 import br.com.luizgabriel.farmabook.distributor.Distributor;
@@ -35,6 +36,9 @@ class ShortageOrderServiceTest {
     @InjectMocks
     private ShortageUtils shortageUtils;
 
+    @InjectMocks
+    private UserUtils userUtils;
+
     @Mock
     private ShortageOrderRepository repository;
 
@@ -49,6 +53,216 @@ class ShortageOrderServiceTest {
 
     @Mock
     private ShortageMapper shortageMapper;
+
+    // --- save ---
+
+    @Test
+    @DisplayName("save should create the shortage order and its shortages when successful")
+    void save_ReturnsShortageOrderGetResponse_WhenSuccessful() {
+        var actor = userUtils.newUser();
+        var request = utils.newShortageOrderPostRequest();
+        var distributor = utils.newDistributor();
+        var order = utils.newShortageOrder();
+        var shortage = shortageUtils.newShortage();
+        var shortageResponse = shortageUtils.newShortageGetResponse(shortage);
+        var response = utils.newShortageOrderGetResponse(order, List.of(shortageResponse));
+
+        BDDMockito.when(distributorService.findByIdOrThrowNotFound(request.distributorId())).thenReturn(distributor);
+        BDDMockito.when(mapper.toShortageOrder(request, distributor.getName(), actor)).thenReturn(order);
+        BDDMockito.when(repository.save(order)).thenReturn(order);
+        BDDMockito.when(shortageRepository.save(ArgumentMatchers.any(Shortage.class))).thenReturn(shortage);
+        BDDMockito.when(shortageMapper.toShortageGetResponse(shortage)).thenReturn(shortageResponse);
+        BDDMockito.when(mapper.toShortageOrderGetResponse(order, List.of(shortageResponse))).thenReturn(response);
+
+        var result = service.save(request, actor);
+
+        assertThat(result).isEqualTo(response);
+        BDDMockito.then(repository).should().save(order);
+        BDDMockito.then(shortageRepository).should().save(ArgumentMatchers.any(Shortage.class));
+    }
+
+    @Test
+    @DisplayName("save should throw NotFoundException when distributor is not found")
+    void save_ThrowsNotFoundException_WhenDistributorNotFound() {
+        var actor = userUtils.newUser();
+        var request = utils.newShortageOrderPostRequest();
+
+        BDDMockito.when(distributorService.findByIdOrThrowNotFound(request.distributorId()))
+                .thenThrow(new NotFoundException("Distributor not found"));
+
+        assertThatThrownBy(() -> service.save(request, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(ShortageOrder.class));
+        BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
+    }
+
+    // --- findAll ---
+
+    @Test
+    @DisplayName("findAll should query by shortage type only when distributorId is null")
+    void findAll_QueriesByShortageType_WhenDistributorIdIsNull() {
+        var pageable = org.springframework.data.domain.Pageable.ofSize(10);
+        var order = utils.newShortageOrder();
+        var listResponse = utils.newShortageOrderListResponse(order);
+        var page = new org.springframework.data.domain.PageImpl<>(List.of(order));
+
+        BDDMockito.when(repository.findByShortageType(ShortageType.WANIA, pageable)).thenReturn(page);
+        BDDMockito.when(mapper.toShortageOrderListResponse(order)).thenReturn(listResponse);
+
+        var result = service.findAll(ShortageType.WANIA, null, pageable);
+
+        assertThat(result.getContent()).containsExactly(listResponse);
+        BDDMockito.then(repository).should(Mockito.never())
+                .findByShortageTypeAndDistributorId(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any());
+    }
+
+    @Test
+    @DisplayName("findAll should query by shortage type and distributor when distributorId is provided")
+    void findAll_QueriesByShortageTypeAndDistributor_WhenDistributorIdIsProvided() {
+        var pageable = org.springframework.data.domain.Pageable.ofSize(10);
+        var distributorId = ShortageOrderUtils.DISTRIBUTOR_ID;
+        var order = utils.newShortageOrder();
+        var listResponse = utils.newShortageOrderListResponse(order);
+        var page = new org.springframework.data.domain.PageImpl<>(List.of(order));
+
+        BDDMockito.when(repository.findByShortageTypeAndDistributorId(ShortageType.WANIA, distributorId, pageable))
+                .thenReturn(page);
+        BDDMockito.when(mapper.toShortageOrderListResponse(order)).thenReturn(listResponse);
+
+        var result = service.findAll(ShortageType.WANIA, distributorId, pageable);
+
+        assertThat(result.getContent()).containsExactly(listResponse);
+        BDDMockito.then(repository).should(Mockito.never())
+                .findByShortageType(ArgumentMatchers.any(), ArgumentMatchers.any());
+    }
+
+    // --- findById ---
+
+    @Test
+    @DisplayName("findById should return ShortageOrderGetResponse with its shortages when successful")
+    void findById_ReturnsShortageOrderGetResponse_WhenSuccessful() {
+        var order = utils.newShortageOrder();
+        var shortage = shortageUtils.newShortage();
+        var shortageResponse = shortageUtils.newShortageGetResponse(shortage);
+        var response = utils.newShortageOrderGetResponse(order, List.of(shortageResponse));
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(shortageRepository.findAllByShortageOrderId(order.getId())).thenReturn(List.of(shortage));
+        BDDMockito.when(shortageMapper.toShortageGetResponse(shortage)).thenReturn(shortageResponse);
+        BDDMockito.when(mapper.toShortageOrderGetResponse(order, List.of(shortageResponse))).thenReturn(response);
+
+        var result = service.findById(order.getId());
+
+        assertThat(result).isEqualTo(response);
+    }
+
+    @Test
+    @DisplayName("findById should throw NotFoundException when shortage order is not found")
+    void findById_ThrowsNotFoundException_WhenShortageOrderNotFound() {
+        var id = UUID.randomUUID();
+
+        BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(id))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    // --- delete ---
+
+    @Test
+    @DisplayName("delete should remove the shortage order and its shortages when PENDING")
+    void delete_DeletesShortageOrderAndShortages_WhenSuccessful() {
+        var order = utils.newShortageOrder();
+        var shortage = shortageUtils.newShortage();
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(shortageRepository.findAllByShortageOrderId(order.getId())).thenReturn(List.of(shortage));
+
+        service.delete(order.getId());
+
+        BDDMockito.then(shortageRepository).should().delete(shortage);
+        BDDMockito.then(repository).should().delete(order);
+    }
+
+    @Test
+    @DisplayName("delete should throw NotFoundException when shortage order is not found")
+    void delete_ThrowsNotFoundException_WhenShortageOrderNotFound() {
+        var id = UUID.randomUUID();
+
+        BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete(id))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).delete(ArgumentMatchers.any(ShortageOrder.class));
+    }
+
+    @Test
+    @DisplayName("delete should throw ConflictException when shortage order is already ORDERED")
+    void delete_ThrowsConflictException_WhenShortageOrderIsOrdered() {
+        var order = utils.newOrderedShortageOrder();
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.delete(order.getId()))
+                .isInstanceOf(ConflictException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).delete(ArgumentMatchers.any(ShortageOrder.class));
+        BDDMockito.then(shortageRepository).should(Mockito.never()).delete(ArgumentMatchers.any(Shortage.class));
+    }
+
+    // --- markAsOrdered ---
+
+    @Test
+    @DisplayName("markAsOrdered should set ORDERED status on the order and its pending shortages when successful")
+    void markAsOrdered_SetsOrderedStatus_WhenSuccessful() {
+        var actor = userUtils.newUser();
+        var order = utils.newShortageOrder();
+        var shortage = shortageUtils.newShortage();
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(shortageRepository.findAllByShortageOrderId(order.getId())).thenReturn(List.of(shortage));
+
+        service.markAsOrdered(order.getId(), actor);
+
+        assertThat(order.getStatus()).isEqualTo(ShortageOrderStatus.ORDERED);
+        assertThat(order.getOrderedById()).isEqualTo(actor.getId());
+        assertThat(order.getOrderedByName()).isEqualTo(actor.getName());
+        assertThat(order.getOrderedAt()).isNotNull();
+        assertThat(shortage.getStatus()).isEqualTo(ShortageStatus.ORDERED);
+        BDDMockito.then(repository).should().save(order);
+        BDDMockito.then(shortageRepository).should().save(shortage);
+    }
+
+    @Test
+    @DisplayName("markAsOrdered should throw NotFoundException when shortage order is not found")
+    void markAsOrdered_ThrowsNotFoundException_WhenShortageOrderNotFound() {
+        var actor = userUtils.newUser();
+        var id = UUID.randomUUID();
+
+        BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.markAsOrdered(id, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(ShortageOrder.class));
+    }
+
+    @Test
+    @DisplayName("markAsOrdered should throw ConflictException when shortage order is already ORDERED")
+    void markAsOrdered_ThrowsConflictException_WhenShortageOrderIsAlreadyOrdered() {
+        var actor = userUtils.newUser();
+        var order = utils.newOrderedShortageOrder();
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.markAsOrdered(order.getId(), actor))
+                .isInstanceOf(ConflictException.class);
+
+        BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(ShortageOrder.class));
+        BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
+    }
 
     // --- update ---
 

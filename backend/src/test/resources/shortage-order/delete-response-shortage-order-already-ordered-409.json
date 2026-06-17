@@ -1,0 +1,4 @@
+{
+  "message": "Shortage order with id '00000000-0000-0000-0000-000000000060' is not PENDING and cannot be deleted",
+  "status": 409
+}

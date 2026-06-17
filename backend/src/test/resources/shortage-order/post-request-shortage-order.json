@@ -1,0 +1,13 @@
+{
+  "shortageType": "WANIA",
+  "distributorId": "00000000-0000-0000-0000-000000000020",
+  "items": [
+    {
+      "product": "Dipirona 500mg",
+      "category": "MEDICAMENTOS",
+      "quantity": 10,
+      "costPrice": 12.50
+    }
+  ],
+  "observations": "Pedido de teste"
+}
