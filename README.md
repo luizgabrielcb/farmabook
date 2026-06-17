@@ -15,7 +15,6 @@ Sistema de gestão de encomendas, faltas, manipulações e receitas para farmác
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 
 </div>
----
 
 ## 📑 Sumário
 
