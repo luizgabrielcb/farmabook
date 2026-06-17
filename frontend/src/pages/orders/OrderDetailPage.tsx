@@ -27,10 +27,17 @@ import { useConfirm } from '@/context/ConfirmContext'
 import { useToast } from '@/context/ToastContext'
 import { formatDate, cn } from '@/lib/utils'
 import { ArrowLeft, Plus, Trash2, Pencil, MessageCircle, Settings2, X } from 'lucide-react'
-import type { Category, Distributor, OrderItem, Notification } from '@/types'
+import type { Category, Distributor, OrderItem, Notification, OrderPaymentStatus } from '@/types'
 
-interface ItemForm { product: string; category: Category; quantity: string; price: string }
-const emptyItemForm: ItemForm = { product: '', category: 'MEDICAMENTOS', quantity: '', price: '' }
+interface ItemForm { product: string; category: Category; quantity: string; price: string; paymentStatus: OrderPaymentStatus }
+const emptyItemForm: ItemForm = { product: '', category: 'MEDICAMENTOS', quantity: '', price: '', paymentStatus: 'TO_PAY' }
+
+const PAYMENT_STATUS_OPTIONS: { value: OrderPaymentStatus; label: string }[] = [
+  { value: 'TO_PAY', label: 'A pagar' },
+  { value: 'MAKE_NOTE', label: 'Fazer nota' },
+  { value: 'PAID', label: 'Pago' },
+  { value: 'NOTED', label: 'Anotado' },
+]
 
 type DistributorPickerState = null | 'bulk' | 'bulk-selected' | { itemId: string }
 type DetailTab = 'itens' | 'pagamento' | 'historico'
@@ -182,7 +189,7 @@ export function OrderDetailPage() {
       }
       return editingItem
         ? updateOrderItem(id!, editingItem.id, body)
-        : addOrderItem(id!, body)
+        : addOrderItem(id!, { ...body, paymentStatus: itemForm.paymentStatus })
     },
     onSuccess: () => { toast.success(editingItem ? 'Item atualizado' : 'Item adicionado'); closeItemDialog(); invalidate() },
   })
@@ -201,6 +208,7 @@ export function OrderDetailPage() {
       category: item.category,
       quantity: String(item.quantity ?? ''),
       price: item.price != null ? String(item.price).replace('.', ',') : '',
+      paymentStatus: item.paymentStatus,
     })
     saveItemMutation.reset()
     setItemDialogOpen(true)
@@ -290,6 +298,12 @@ export function OrderDetailPage() {
   const selectableItems = order.items.filter((i) => i.status !== 'DELIVERED')
   const allSelected = selectableItems.length > 0 && selectableItems.every((i) => selectedIds.has(i.id))
   const someSelected = selectedIds.size > 0
+  const payableItems = order.items.filter((i) => i.paymentStatus === 'TO_PAY' || i.paymentStatus === 'MAKE_NOTE')
+  const allPayableSelected = payableItems.length > 0 && payableItems.every((i) => selectedIds.has(i.id))
+  function togglePaymentSelectAll() {
+    if (allPayableSelected) setSelectedIds(new Set())
+    else setSelectedIds(new Set(payableItems.map((i) => i.id)))
+  }
 
   async function handleDelete() {
     if (!await confirm('Excluir esta encomenda? Esta ação não pode ser desfeita.')) return
@@ -516,7 +530,11 @@ export function OrderDetailPage() {
               <Table>
                 <TableHead>
                   <tr>
-                    <Th className="w-8" />
+                    <Th className="w-8">
+                      {payableItems.length > 0 && (
+                        <input type="checkbox" checked={allPayableSelected} onChange={togglePaymentSelectAll} className="accent-brand-600 cursor-pointer" />
+                      )}
+                    </Th>
                     <Th>Item</Th><Th className="text-right">Preço un.</Th><Th>Pagamento</Th><Th />
                   </tr>
                 </TableHead>
@@ -709,6 +727,14 @@ export function OrderDetailPage() {
             </label>
             <PriceInput value={itemForm.price} onChange={(v) => setItemForm((p) => ({ ...p, price: v }))} />
           </div>
+          {!editingItem && (
+            <div>
+              <label className="text-xs font-medium text-gray-700 block mb-1">Status de pagamento</label>
+              <Select value={itemForm.paymentStatus} onChange={(e) => setItemForm((p) => ({ ...p, paymentStatus: e.target.value as OrderPaymentStatus }))}>
+                {PAYMENT_STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </Select>
+            </div>
+          )}
           {saveItemMutation.isError && <ErrorMessage error={saveItemMutation.error} />}
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={closeItemDialog}>Cancelar</Button>

@@ -9,7 +9,7 @@ import type { Customer } from '@/types'
 interface CustomerSearchProps {
   value: Customer | null
   onChange: (customer: Customer | null) => void
-  onQuickAdd?: () => void
+  onQuickAdd?: (query: string) => void
   placeholder?: string
 }
 
@@ -88,7 +88,7 @@ export function CustomerSearch({ value, onChange, onQuickAdd, placeholder }: Cus
             <div className="px-3 py-2 text-sm text-gray-400 flex items-center gap-2">
               Nenhum cliente encontrado.
               {onQuickAdd && (
-                <Button type="button" variant="ghost" size="sm" className="text-blue-600" onClick={onQuickAdd}>
+                <Button type="button" variant="ghost" size="sm" className="text-blue-600" onClick={() => onQuickAdd(query)}>
                   <Plus size={12} /> Cadastrar
                 </Button>
               )}
@@ -111,7 +111,7 @@ export function CustomerSearch({ value, onChange, onQuickAdd, placeholder }: Cus
               {onQuickAdd && (
                 <button
                   type="button"
-                  onClick={onQuickAdd}
+                  onClick={() => onQuickAdd(query)}
                   className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t border-gray-100 flex items-center gap-1"
                 >
                   <Plus size={12} /> Cadastrar novo cliente

@@ -83,7 +83,11 @@ public class OrderUtils {
     }
 
     public OrderItemPostRequest newOrderItemPostRequest() {
-        return new OrderItemPostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 1, null);
+        return new OrderItemPostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 1, null, null);
+    }
+
+    public OrderItemPostRequest newOrderItemPostRequest(OrderPaymentStatus paymentStatus) {
+        return new OrderItemPostRequest("Dipirona 500mg", Category.MEDICAMENTOS, 1, null, paymentStatus);
     }
 
     public OrderItemPutRequest newOrderItemPutRequest() {

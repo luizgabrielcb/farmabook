@@ -117,7 +117,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
             <CustomerSearch
               value={customer}
               onChange={setCustomer}
-              onQuickAdd={() => setQuickAddOpen(true)}
+              onQuickAdd={(q) => { setNewCustomerName(q); setQuickAddOpen(true) }}
             />
             {customer?.phoneNumber && (
               <p className="text-xs text-gray-400 mt-1">{customer.phoneNumber}</p>
@@ -176,7 +176,7 @@ export function CreateOrderDialog({ open, onClose, onSuccess }: Props) {
                     <PriceInput
                       value={item.price}
                       onChange={(v) => updateItem(i, 'price', v)}
-                      placeholder="Preço (opc.)"
+                      placeholder="Preço un. (opc.)"
                       className={`w-36 bg-white ${hasTotalPrice ? 'opacity-40 pointer-events-none' : ''}`}
                     />
                   </div>

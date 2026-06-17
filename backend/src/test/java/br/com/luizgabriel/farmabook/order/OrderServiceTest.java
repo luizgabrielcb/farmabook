@@ -268,6 +268,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("addItem should return OrderItemGetResponse when successful")
     void addItem_ReturnsOrderItemGetResponse_WhenSuccessful() {
+        var actor = userUtils.newUser();
         var order = utils.newOrder();
         var request = utils.newOrderItemPostRequest();
         var newItem = utils.newPendingItem();
@@ -278,21 +279,44 @@ class OrderServiceTest {
         BDDMockito.when(orderItemRepository.save(newItem)).thenReturn(newItem);
         BDDMockito.when(mapper.toOrderItemGetResponse(newItem)).thenReturn(response);
 
-        var result = service.addItem(order.getId(), request);
+        var result = service.addItem(order.getId(), request, actor);
 
         assertThat(result).isEqualTo(response);
         BDDMockito.then(orderItemRepository).should().save(newItem);
     }
 
     @Test
+    @DisplayName("addItem should apply the requested payment status and stamp the audit when not TO_PAY")
+    void addItem_AppliesPaymentStatus_WhenProvided() {
+        var actor = userUtils.newUser();
+        var order = utils.newOrder();
+        var request = utils.newOrderItemPostRequest(OrderPaymentStatus.PAID);
+        var newItem = utils.newPendingItem();
+        var response = utils.newOrderItemGetResponse(newItem);
+
+        BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(mapper.toOrderItem(request)).thenReturn(newItem);
+        BDDMockito.when(orderItemRepository.save(newItem)).thenReturn(newItem);
+        BDDMockito.when(mapper.toOrderItemGetResponse(newItem)).thenReturn(response);
+
+        service.addItem(order.getId(), request, actor);
+
+        assertThat(newItem.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
+        assertThat(newItem.getPaymentChangedByName()).isEqualTo(actor.getName());
+        assertThat(newItem.getPaymentChangedAt()).isNotNull();
+        BDDMockito.then(orderItemRepository).should().save(newItem);
+    }
+
+    @Test
     @DisplayName("addItem should throw NotFoundException when order is not found")
     void addItem_ThrowsNotFoundException_WhenOrderNotFound() {
+        var actor = userUtils.newUser();
         var id = UUID.randomUUID();
         var request = utils.newOrderItemPostRequest();
 
         BDDMockito.when(repository.findWithItemsById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.addItem(id, request))
+        assertThatThrownBy(() -> service.addItem(id, request, actor))
                 .isInstanceOf(NotFoundException.class);
 
         BDDMockito.then(orderItemRepository).should(Mockito.never()).save(ArgumentMatchers.any(OrderItem.class));
@@ -301,12 +325,13 @@ class OrderServiceTest {
     @Test
     @DisplayName("addItem should throw ConflictException when order is DELIVERED")
     void addItem_ThrowsConflictException_WhenOrderIsDelivered() {
+        var actor = userUtils.newUser();
         var order = utils.newDeliveredOrder();
         var request = utils.newOrderItemPostRequest();
 
         BDDMockito.when(repository.findWithItemsById(order.getId())).thenReturn(Optional.of(order));
 
-        assertThatThrownBy(() -> service.addItem(order.getId(), request))
+        assertThatThrownBy(() -> service.addItem(order.getId(), request, actor))
                 .isInstanceOf(ConflictException.class);
 
         BDDMockito.then(orderItemRepository).should(Mockito.never()).save(ArgumentMatchers.any(OrderItem.class));

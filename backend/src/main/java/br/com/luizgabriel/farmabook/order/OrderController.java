@@ -112,9 +112,9 @@ public class OrderController {
             @RequestHeader("X-Auth-Pin") String pin,
             @RequestBody @Valid OrderItemPostRequest request) {
 
-        authService.authenticatedUser(pin);
+        var actor = authService.authenticatedUser(pin);
 
-        var response = service.addItem(id, request);
+        var response = service.addItem(id, request, actor);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

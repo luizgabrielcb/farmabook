@@ -102,7 +102,7 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderItemGetResponse addItem(UUID orderId, OrderItemPostRequest request) {
+    public OrderItemGetResponse addItem(UUID orderId, OrderItemPostRequest request, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
 
         ensureOrderMutable(order);
@@ -110,6 +110,14 @@ public class OrderService {
         var item = mapper.toOrderItem(request);
         item.setPrice(request.price());
         item.setOrder(order);
+
+        if (request.paymentStatus() != null) {
+            item.setPaymentStatus(request.paymentStatus());
+            // Carimba a auditoria quando o item já entra num status diferente do padrão
+            if (request.paymentStatus() != OrderPaymentStatus.TO_PAY) {
+                stampPaymentChange(item, actor);
+            }
+        }
 
         if (request.price() != null) {
             order.setTotalPrice(null);
@@ -119,6 +127,7 @@ public class OrderService {
         order.getItems().add(savedItem);
 
         recalculateOrderStatus(order);
+        recalculateOrderPaymentStatus(order);
 
         return mapper.toOrderItemGetResponse(savedItem);
     }

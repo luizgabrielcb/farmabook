@@ -55,7 +55,7 @@ export function CompoundingsPage() {
     <div>
       <PageHeader
         title="Manipulações"
-        description="Pedidos de manipulação em farmácias externas"
+        description="Pedidos de manipulação"
         actions={
           activeTab === 'compoundings' ? (
             <Button variant="primary" size="md" className="px-4" onClick={() => setCreateCompoundingOpen(true)}>

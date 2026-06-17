@@ -114,7 +114,7 @@ export function CreatePrescriptionDialog({ open, onClose, onSuccess }: Props) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-xs font-medium text-gray-700 block mb-1">Cliente</label>
-            <CustomerSearch value={customer} onChange={setCustomer} onQuickAdd={() => setQuickAddOpen(true)} />
+            <CustomerSearch value={customer} onChange={setCustomer} onQuickAdd={(q) => { setNewCustomerName(q); setQuickAddOpen(true) }} />
           </div>
 
           <div>
