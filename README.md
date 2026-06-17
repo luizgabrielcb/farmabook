@@ -38,19 +38,10 @@ Sistema de gestão de encomendas, faltas, manipulações e receitas para farmác
 
 ## 📸 Demonstração
 
-> _Em breve..._
-<img width="1513" height="689" alt="Captura de Tela 2026-06-17 às 16 31 45" src="https://github.com/user-attachments/assets/d7f2a8bb-b0aa-4496-abc1-1265eab908f5" />
-<!--
-  TODO — substituir pelos arquivos reais:
-  - Hospede as imagens em docs/screenshots/ no próprio repositório
-  - Use um seed com dados realistas (nomes de medicamentos e clientes plausíveis), NÃO dados de teste
-  - Ordem sugerida: (1) GIF do fluxo de notificação  (2) lista de encomendas  (3) detalhe com ações rápidas
-  ![Fluxo de notificação](docs/screenshots/demo.gif)
-  | Encomendas | Detalhe da encomenda |
-  |---|---|
-  | ![Encomendas](docs/screenshots/encomendas.png) | ![Detalhe](docs/screenshots/detalhe.png) |
--->
- 
+<img width="1919" height="999" alt="Captura de Tela 2026-06-17 às 20 46 37" src="https://github.com/user-attachments/assets/8ceecd25-479f-4d9b-b46b-0f152b887b94" />
+<img width="1920" height="998" alt="Captura de Tela 2026-06-17 às 20 48 19" src="https://github.com/user-attachments/assets/5902b754-7b97-4771-807b-07edb589715c" />
+<img width="1920" height="998" alt="Captura de Tela 2026-06-17 às 20 47 23" src="https://github.com/user-attachments/assets/c249564c-3f05-4106-8a8b-7c7a5660e06a" />
+
 ---
 
 ## 🩹 O problema
