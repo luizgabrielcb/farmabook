@@ -30,6 +30,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px',
       }}
     >
       {/* backdrop */}
@@ -45,7 +46,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
       {/* conteúdo */}
       <div
         className={cn(
-          'relative bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(20,26,32,0.18)] border border-gray-150 w-full max-w-md p-6 focus:outline-none',
+          'relative bg-white rounded-2xl shadow-[0_24px_48px_-12px_rgba(20,26,32,0.18)] border border-gray-150 w-full max-w-md p-6 focus:outline-none max-h-[90vh] overflow-y-auto',
           className,
         )}
         style={{ animation: 'fb-dialog-in 180ms cubic-bezier(0.22,1,0.36,1)' }}

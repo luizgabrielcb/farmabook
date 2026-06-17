@@ -93,7 +93,7 @@ export function CompoundingDetailPage() {
   ]
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <button
         onClick={() => navigate('/compoundings')}
         className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4 cursor-pointer transition-colors"

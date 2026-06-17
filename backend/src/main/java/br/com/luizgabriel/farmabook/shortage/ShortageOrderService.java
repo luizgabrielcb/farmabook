@@ -7,6 +7,7 @@ import br.com.luizgabriel.farmabook.distributor.DistributorService;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageGetResponse;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderGetResponse;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderListResponse;
+import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderItemRequest;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderPostRequest;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderPutRequest;
 import lombok.RequiredArgsConstructor;
@@ -92,6 +93,33 @@ public class ShortageOrderService {
         order.setDistributorName(distributor.getName());
         order.setObservations(request.observations());
         repository.save(order);
+
+        List<ShortageGetResponse> shortageResponses = shortageRepository.findAllByShortageOrderId(id)
+                .stream()
+                .map(shortageMapper::toShortageGetResponse)
+                .toList();
+        return mapper.toShortageOrderGetResponse(order, shortageResponses);
+    }
+
+    @Transactional
+    public ShortageOrderGetResponse addItem(UUID id, ShortageOrderItemRequest request, User actor) {
+        var order = findByIdOrThrowNotFound(id);
+        if (order.getStatus() != ShortageOrderStatus.PENDING) {
+            throw new ConflictException("Shortage order with id '" + id + "' is not PENDING and cannot be modified");
+        }
+
+        var shortage = Shortage.builder()
+                .product(request.product())
+                .category(request.category())
+                .quantity(request.quantity())
+                .shortageType(order.getShortageType())
+                .status(ShortageStatus.PENDING)
+                .createdById(actor.getId())
+                .createdByName(actor.getName())
+                .shortageOrderId(order.getId())
+                .costPrice(request.costPrice())
+                .build();
+        shortageRepository.save(shortage);
 
         List<ShortageGetResponse> shortageResponses = shortageRepository.findAllByShortageOrderId(id)
                 .stream()

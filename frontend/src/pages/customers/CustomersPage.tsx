@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardField, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Pagination } from '@/components/shared/Pagination'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
@@ -173,7 +174,7 @@ export function CustomersPage() {
         }
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-3">
           <div className="relative max-w-sm">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -187,6 +188,7 @@ export function CustomersPage() {
             <div className="flex justify-center py-12"><Spinner /></div>
           ) : (
             <>
+              <div className="hidden md:block">
               <Table>
                 <TableHead>
                   <tr><Th>Nome</Th><Th>Telefone</Th><Th>Cadastrado em</Th><Th /></tr>
@@ -223,6 +225,24 @@ export function CustomersPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+
+              <CardList>
+                {paged.length === 0 && <CardEmpty>{query ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado.'}</CardEmpty>}
+                {paged.map((c) => (
+                  <MobileCard key={c.id}>
+                    <div className="font-semibold text-gray-900 break-words">{c.name}</div>
+                    <CardField label="Telefone"><span className="font-mono text-xs">{c.phoneNumber ?? '—'}</span></CardField>
+                    <CardField label="Cadastrado">{formatDateShort(c.createdAt)}</CardField>
+                    <CardActions>
+                      <IconAction label="Ver encomendas" onClick={() => openHistory(c)}><History size={18} /></IconAction>
+                      <IconAction label="Editar" onClick={() => openEdit(c)}><Pencil size={17} /></IconAction>
+                      <IconAction label="Excluir" className="text-red-500" onClick={() => handleDelete(c)}><Trash2 size={17} /></IconAction>
+                    </CardActions>
+                  </MobileCard>
+                ))}
+              </CardList>
+
               <Pagination page={page} totalPages={totalPages || 1}
                 totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
             </>
@@ -317,8 +337,8 @@ export function CustomersPage() {
               : 'Carregando...'}
           </p>
         ) : (
-          <div className="overflow-hidden rounded border border-gray-200 mt-3">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded border border-gray-200 mt-3">
+            <table className="w-full text-sm min-w-[420px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>

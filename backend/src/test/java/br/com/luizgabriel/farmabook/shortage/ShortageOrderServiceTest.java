@@ -97,6 +97,60 @@ class ShortageOrderServiceTest {
         BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
     }
 
+    // --- addItem ---
+
+    @Test
+    @DisplayName("addItem should create a new shortage linked to the order and return the updated order when PENDING")
+    void addItem_AddsShortageToOrder_WhenSuccessful() {
+        var actor = userUtils.newUser();
+        var order = utils.newShortageOrder();
+        var request = utils.newShortageOrderItemRequest();
+        var shortage = shortageUtils.newShortage();
+        var shortageResponse = shortageUtils.newShortageGetResponse(shortage);
+        var response = utils.newShortageOrderGetResponse(order, List.of(shortageResponse));
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+        BDDMockito.when(shortageRepository.save(ArgumentMatchers.any(Shortage.class))).thenReturn(shortage);
+        BDDMockito.when(shortageRepository.findAllByShortageOrderId(order.getId())).thenReturn(List.of(shortage));
+        BDDMockito.when(shortageMapper.toShortageGetResponse(shortage)).thenReturn(shortageResponse);
+        BDDMockito.when(mapper.toShortageOrderGetResponse(order, List.of(shortageResponse))).thenReturn(response);
+
+        var result = service.addItem(order.getId(), request, actor);
+
+        assertThat(result).isEqualTo(response);
+        BDDMockito.then(shortageRepository).should().save(ArgumentMatchers.any(Shortage.class));
+    }
+
+    @Test
+    @DisplayName("addItem should throw NotFoundException when shortage order is not found")
+    void addItem_ThrowsNotFoundException_WhenShortageOrderNotFound() {
+        var actor = userUtils.newUser();
+        var id = UUID.randomUUID();
+        var request = utils.newShortageOrderItemRequest();
+
+        BDDMockito.when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.addItem(id, request, actor))
+                .isInstanceOf(NotFoundException.class);
+
+        BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
+    }
+
+    @Test
+    @DisplayName("addItem should throw ConflictException when shortage order is already ORDERED")
+    void addItem_ThrowsConflictException_WhenShortageOrderIsOrdered() {
+        var actor = userUtils.newUser();
+        var order = utils.newOrderedShortageOrder();
+        var request = utils.newShortageOrderItemRequest();
+
+        BDDMockito.when(repository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.addItem(order.getId(), request, actor))
+                .isInstanceOf(ConflictException.class);
+
+        BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
+    }
+
     // --- findAll ---
 
     @Test

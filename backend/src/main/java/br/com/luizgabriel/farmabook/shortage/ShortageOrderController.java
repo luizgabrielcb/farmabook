@@ -2,6 +2,7 @@ package br.com.luizgabriel.farmabook.shortage;
 
 import br.com.luizgabriel.farmabook.auth.AuthService;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderGetResponse;
+import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderItemRequest;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderListResponse;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderPostRequest;
 import br.com.luizgabriel.farmabook.shortage.dto.ShortageOrderPutRequest;
@@ -53,6 +54,15 @@ public class ShortageOrderController {
             @RequestBody @Valid ShortageOrderPutRequest request) {
         authService.authenticatedUser(pin);
         return ResponseEntity.ok(service.update(id, request));
+    }
+
+    @PostMapping("/{id}/items")
+    public ResponseEntity<ShortageOrderGetResponse> addItem(
+            @PathVariable UUID id,
+            @RequestHeader("X-Auth-Pin") String pin,
+            @RequestBody @Valid ShortageOrderItemRequest request) {
+        var actor = authService.authenticatedUser(pin);
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.addItem(id, request, actor));
     }
 
     @DeleteMapping("/{id}")

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Trash2, Pencil, CheckCircle, Settings2, X } from 'lucide-react'
-import { getShortageOrder, updateShortageOrder, deleteShortageOrder, markShortageOrderAsOrdered } from '@/api/shortageOrders'
+import { ArrowLeft, Trash2, Pencil, CheckCircle, Settings2, X, Plus } from 'lucide-react'
+import { getShortageOrder, updateShortageOrder, deleteShortageOrder, markShortageOrderAsOrdered, addShortageOrderItem } from '@/api/shortageOrders'
 import { updateShortage, deleteShortage, markShortageAsOrdered } from '@/api/shortages'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { Dialog } from '@/components/ui/dialog'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { ShortageOrderStatusBadge, ShortageStatusBadge } from '@/components/shared/StatusBadge'
 import { CategoryBadge, CATEGORY_OPTIONS } from '@/components/shared/CategoryBadge'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
@@ -36,6 +37,7 @@ const emptyEdit = (s: Shortage): EditForm => ({
   quantity: s.quantity != null ? String(s.quantity) : '',
   costPrice: s.costPrice != null ? String(s.costPrice).replace('.', ',') : '',
 })
+const emptyAddForm: EditForm = { product: '', category: 'MEDICAMENTOS', quantity: '', costPrice: '' }
 
 export function ShortageOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -47,6 +49,8 @@ export function ShortageOrderDetailPage() {
 
   const [editingShortage, setEditingShortage] = useState<Shortage | null>(null)
   const [editForm, setEditForm] = useState<EditForm | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [addForm, setAddForm] = useState<EditForm>(emptyAddForm)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editingOrder, setEditingOrder] = useState(false)
   const [orderDistributor, setOrderDistributor] = useState<Distributor | null>(null)
@@ -102,6 +106,17 @@ export function ShortageOrderDetailPage() {
     onSuccess: () => { setEditingShortage(null); setEditForm(null); invalidate() },
   })
 
+  const addItemMutation = useMutation({
+    mutationFn: () =>
+      addShortageOrderItem(id!, {
+        product: addForm.product,
+        category: addForm.category,
+        quantity: addForm.quantity ? Number(addForm.quantity) : null,
+        costPrice: parsePriceInput(addForm.costPrice),
+      }),
+    onSuccess: () => { setAddOpen(false); setAddForm(emptyAddForm); invalidate() },
+  })
+
   const deleteShortageMutation = useMutation({
     mutationFn: (shortageId: string) => deleteShortage(shortageId),
     onSuccess: invalidate,
@@ -136,6 +151,12 @@ export function ShortageOrderDetailPage() {
     setEditingShortage(s)
     setEditForm(emptyEdit(s))
     editShortageMutation.reset()
+  }
+
+  function openAdd() {
+    setAddForm(emptyAddForm)
+    addItemMutation.reset()
+    setAddOpen(true)
   }
 
   function openEditOrder() {
@@ -204,7 +225,7 @@ export function ShortageOrderDetailPage() {
         }
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-4">
           <div>
             <span className="text-gray-500 text-xs uppercase tracking-wide">Status</span>
@@ -233,10 +254,15 @@ export function ShortageOrderDetailPage() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-200">
             <span className="text-sm font-medium text-gray-900">
               Itens em falta ({order.shortages.length})
             </span>
+            {isPending && (
+              <Button variant="secondary" size="sm" onClick={openAdd}>
+                <Plus size={12} /> Adicionar item
+              </Button>
+            )}
           </div>
 
           {someSelected && (
@@ -254,6 +280,7 @@ export function ShortageOrderDetailPage() {
             </div>
           )}
 
+          <div className="hidden md:block">
           <Table>
             <TableHead>
               <tr>
@@ -344,8 +371,113 @@ export function ShortageOrderDetailPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <CardList>
+            {order.shortages.length === 0 && <CardEmpty>Nenhum item neste pedido.</CardEmpty>}
+            {order.shortages.map((s) => (
+              <MobileCard key={s.id}>
+                <div className="flex items-start gap-2">
+                  {isPending && s.status === 'PENDING' && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(s.id)}
+                      onChange={() => setSelectedIds((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(s.id)) next.delete(s.id); else next.add(s.id)
+                        return next
+                      })}
+                      className="accent-gray-700 cursor-pointer mt-1 h-4 w-4 shrink-0"
+                    />
+                  )}
+                  <span className="font-semibold text-gray-900 break-words min-w-0 flex-1">{s.product}</span>
+                  <ShortageStatusBadge status={s.status} />
+                </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <CategoryBadge category={s.category} />
+                  <span className="text-gray-400">
+                    Qtd: <span className="text-gray-700">{s.quantity ?? '—'}</span>
+                    {s.costPrice != null && <> · <span className="font-mono text-gray-600">{currencyFmt.format(s.costPrice)}</span></>}
+                  </span>
+                </div>
+                <CardActions>
+                  {s.status === 'PENDING' && (
+                    <>
+                      <Button variant="ghost" className="h-11 px-3 text-blue-500" onClick={() => handleMarkShortageOrdered(s)} disabled={markShortageOrderedMutation.isPending}>
+                        <CheckCircle size={15} /> Pedido
+                      </Button>
+                      <IconAction label="Editar" onClick={() => openEdit(s)}><Pencil size={17} /></IconAction>
+                      <IconAction label="Excluir" className="text-red-500" onClick={() => handleDeleteShortage(s)} disabled={deleteShortageMutation.isPending}><Trash2 size={17} /></IconAction>
+                    </>
+                  )}
+                  <AuditButton
+                    triggerClassName="grid place-items-center h-11 w-11 p-0"
+                    iconSize={18}
+                    rows={[
+                      { label: 'Registrado', value: `${s.createdByName} · ${formatDate(s.createdAt)}` },
+                      { label: 'Pedido', value: s.orderedByName ? `${s.orderedByName} · ${formatDate(s.orderedAt)}` : '—' },
+                    ]}
+                  />
+                </CardActions>
+              </MobileCard>
+            ))}
+          </CardList>
         </div>
       </div>
+
+      <Dialog
+        open={addOpen}
+        onOpenChange={(v) => !v && setAddOpen(false)}
+        title="Adicionar item"
+      >
+        <form
+          onSubmit={(e) => { e.preventDefault(); withPin(() => addItemMutation.mutate()) }}
+          className="space-y-3"
+        >
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Item</label>
+            <Input value={addForm.product}
+              onChange={(e) => setAddForm((p) => ({ ...p, product: e.target.value }))}
+              maxLength={150} required autoFocus autoComplete="off" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-gray-700 block mb-1">Categoria</label>
+            <Select value={addForm.category}
+              onChange={(e) => setAddForm((p) => ({ ...p, category: e.target.value as Category }))}>
+              {CATEGORY_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </Select>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-gray-700 block mb-1">
+                Quantidade <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <Input type="number" min={1} max={999} step={1} value={addForm.quantity}
+                onKeyDown={(e) => ['e', 'E', '+', '-', '.', ','].includes(e.key) && e.preventDefault()}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '')
+                  if (val && parseInt(val, 10) > 999) return
+                  setAddForm((p) => ({ ...p, quantity: val }))
+                }}
+                placeholder="—" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-medium text-gray-700 block mb-1">
+                Preço custo <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <PriceInput value={addForm.costPrice}
+                onChange={(v) => setAddForm((p) => ({ ...p, costPrice: v }))} />
+            </div>
+          </div>
+          {addItemMutation.isError && <ErrorMessage error={addItemMutation.error} />}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setAddOpen(false)}>Cancelar</Button>
+            <Button type="submit" variant="primary" disabled={addItemMutation.isPending || !addForm.product.trim()}>
+              {addItemMutation.isPending ? 'Salvando...' : 'Adicionar'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
 
       <Dialog
         open={editingOrder}

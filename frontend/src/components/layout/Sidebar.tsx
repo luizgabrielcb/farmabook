@@ -1,21 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { ShoppingCart, Package, Users, UserCog, Truck } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { to: '/orders', label: 'Encomendas', icon: ShoppingCart, shortcut: 'F3' },
-  { to: '/shortages', label: 'Faltas', icon: Package, shortcut: 'F2' },
-  { to: '/customers', label: 'Clientes', icon: Users, shortcut: 'F4' },
-  { to: '/users', label: 'Usuários', icon: UserCog },
-  { to: '/distributors', label: 'Distribuidoras', icon: Truck },
-]
+import { navItems } from './nav-config'
 
 export function Sidebar() {
   return (
-    <aside className="w-60 shrink-0 bg-white border-r border-gray-150 flex flex-col h-screen sticky top-0">
+    <aside className="hidden md:flex w-60 shrink-0 bg-white border-r border-gray-150 flex-col h-screen sticky top-0">
       <div className="px-4 py-4 flex items-center gap-2.5 border-b border-gray-150">
         <span className="grid place-items-center w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 shadow-[0_2px_6px_-1px_rgba(13,138,126,0.45)]">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="white" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="white" aria-hidden="true">
             <rect x="8.5" y="3.5" width="7" height="17" rx="2" />
             <rect x="3.5" y="8.5" width="17" height="7" rx="2" />
           </svg>

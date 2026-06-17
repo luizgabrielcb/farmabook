@@ -138,11 +138,11 @@ export function CreateShortageOrderDialog({ open, onOpenChange, shortageType, la
                     required
                     autoComplete="off"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Select
                       value={item.category}
                       onChange={(e) => updateItem(index, 'category', e.target.value)}
-                      className="flex-1"
+                      className="flex-1 min-w-[140px]"
                     >
                       {CATEGORY_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>

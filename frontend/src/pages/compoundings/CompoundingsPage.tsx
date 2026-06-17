@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardField, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Pagination } from '@/components/shared/Pagination'
 import { Dialog } from '@/components/ui/dialog'
@@ -67,7 +68,7 @@ export function CompoundingsPage() {
           )
         }
       />
-      <div className="px-6 pt-4">
+      <div className="px-4 sm:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200">
           {([
             { key: 'compoundings', label: 'Manipulações' },
@@ -84,7 +85,7 @@ export function CompoundingsPage() {
           ))}
         </div>
       </div>
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {activeTab === 'compoundings'
           ? <CompoundingsList createOpen={createCompoundingOpen} setCreateOpen={setCreateCompoundingOpen} />
           : <PharmaciesList createOpen={createPharmacyOpen} setCreateOpen={setCreatePharmacyOpen} />
@@ -183,6 +184,7 @@ function CompoundingsList({ createOpen, setCreateOpen }: CompoundingsListProps) 
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
           <>
+            <div className="hidden md:block">
             <Table>
               <TableHead>
                 <tr>
@@ -210,6 +212,26 @@ function CompoundingsList({ createOpen, setCreateOpen }: CompoundingsListProps) 
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            <CardList>
+              {paged.length === 0 && (
+                <CardEmpty>{hasFilter ? 'Nenhuma manipulação encontrada com esses filtros.' : 'Nenhuma manipulação registrada.'}</CardEmpty>
+              )}
+              {paged.map((c) => (
+                <MobileCard key={c.id} onClick={() => navigate(`/compoundings/${c.id}`)}>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-gray-900 break-words min-w-0 flex-1" title={c.customerName}>{c.customerName}</span>
+                    <CompoundingStatusBadge status={c.status} />
+                  </div>
+                  <CardField label="Farmácia">{c.pharmacyName}</CardField>
+                  <CardField label="Qtd.">{c.quantity}</CardField>
+                  <CardField label="Pagamento"><PaymentStatusBadge status={c.paymentStatus} /></CardField>
+                  <CardField label="Data">{formatDateShort(c.createdAt)}</CardField>
+                </MobileCard>
+              ))}
+            </CardList>
+
             <Pagination page={page} totalPages={totalPages || 1}
               totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
           </>
@@ -274,30 +296,49 @@ function PharmaciesList({ createOpen, setCreateOpen }: PharmaciesListProps) {
         {isLoading ? (
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
-          <Table>
-            <TableHead>
-              <tr><Th>Nome</Th><Th>Cidade</Th><Th>Cadastrada em</Th><Th /></tr>
-            </TableHead>
-            <TableBody>
-              {(data?.content ?? []).length === 0 && (
-                <tr><Td colSpan={4} className="text-center text-gray-400 py-10">Nenhuma farmácia cadastrada.</Td></tr>
-              )}
+          <>
+            <div className="hidden md:block">
+            <Table>
+              <TableHead>
+                <tr><Th>Nome</Th><Th>Cidade</Th><Th>Cadastrada em</Th><Th /></tr>
+              </TableHead>
+              <TableBody>
+                {(data?.content ?? []).length === 0 && (
+                  <tr><Td colSpan={4} className="text-center text-gray-400 py-10">Nenhuma farmácia cadastrada.</Td></tr>
+                )}
+                {(data?.content ?? []).map((p) => (
+                  <Tr key={p.id}>
+                    <Td><span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={p.name}>{p.name}</span></Td>
+                    <Td><span className="text-gray-500 block max-w-[140px] break-words whitespace-normal" title={p.city}>{p.city}</span></Td>
+                    <Td className="text-gray-500">{formatDateShort(p.createdAt)}</Td>
+                    <Td>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(p)}><Pencil size={12} /></Button>
+                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
+                          onClick={() => handleDelete(p)}><Trash2 size={12} /></Button>
+                      </div>
+                    </Td>
+                  </Tr>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+
+            <CardList>
+              {(data?.content ?? []).length === 0 && <CardEmpty>Nenhuma farmácia cadastrada.</CardEmpty>}
               {(data?.content ?? []).map((p) => (
-                <Tr key={p.id}>
-                  <Td><span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={p.name}>{p.name}</span></Td>
-                  <Td><span className="text-gray-500 block max-w-[140px] break-words whitespace-normal" title={p.city}>{p.city}</span></Td>
-                  <Td className="text-gray-500">{formatDateShort(p.createdAt)}</Td>
-                  <Td>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(p)}><Pencil size={12} /></Button>
-                      <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
-                        onClick={() => handleDelete(p)}><Trash2 size={12} /></Button>
-                    </div>
-                  </Td>
-                </Tr>
+                <MobileCard key={p.id}>
+                  <div className="font-semibold text-gray-900 break-words">{p.name}</div>
+                  <CardField label="Cidade">{p.city}</CardField>
+                  <CardField label="Cadastrada">{formatDateShort(p.createdAt)}</CardField>
+                  <CardActions>
+                    <IconAction label="Editar" onClick={() => openEdit(p)}><Pencil size={17} /></IconAction>
+                    <IconAction label="Excluir" className="text-red-500" onClick={() => handleDelete(p)}><Trash2 size={17} /></IconAction>
+                  </CardActions>
+                </MobileCard>
               ))}
-            </TableBody>
-          </Table>
+            </CardList>
+          </>
         )}
       </div>
 

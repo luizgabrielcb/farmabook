@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Pagination } from '@/components/shared/Pagination'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
@@ -259,6 +260,7 @@ function FaltasPanel({ shortageType, label, createOpen, setCreateOpen }: PanelPr
                 </div>
               </div>
             )}
+            <div className="hidden md:block">
             <Table>
               <TableHead>
                 <tr>
@@ -348,6 +350,73 @@ function FaltasPanel({ shortageType, label, createOpen, setCreateOpen }: PanelPr
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            <CardList>
+              {paged.length === 0 && (
+                <CardEmpty>{hasFilter ? 'Nenhuma falta encontrada com esses filtros.' : 'Nenhuma falta registrada.'}</CardEmpty>
+              )}
+              {paged.map((s) => {
+                const selectable = s.status === 'PENDING' && !s.shortageOrderId
+                return (
+                  <MobileCard key={s.id}>
+                    <div className="flex items-start gap-2">
+                      {selectable && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(s.id)}
+                          onChange={() => setSelectedIds((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(s.id)) next.delete(s.id); else next.add(s.id)
+                            return next
+                          })}
+                          className="accent-gray-700 cursor-pointer mt-1 h-4 w-4 shrink-0"
+                        />
+                      )}
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span className="font-semibold text-gray-900 break-words">{s.product}</span>
+                        {s.shortageOrderId && (
+                          <button
+                            title="Ver pedido de falta"
+                            onClick={() => navigate(`/shortage-orders/${s.shortageOrderId}`)}
+                            className="text-blue-500 shrink-0 cursor-pointer"
+                          >
+                            <Package size={13} />
+                          </button>
+                        )}
+                      </div>
+                      <ShortageStatusBadge status={s.status} />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <CategoryBadge category={s.category} />
+                      <span className="text-gray-400">
+                        Qtd: <span className="text-gray-700">{s.quantity ?? '—'}</span> · {formatDate(s.createdAt)}
+                      </span>
+                    </div>
+                    <CardActions>
+                      {selectable && (
+                        <>
+                          <Button variant="ghost" className="h-11 px-3 text-blue-500" onClick={() => handleMarkOrdered(s)}>
+                            <CheckCircle size={15} /> Pedido
+                          </Button>
+                          <IconAction label="Editar" onClick={() => openEdit(s)}><Pencil size={17} /></IconAction>
+                          <IconAction label="Excluir" className="text-red-500" onClick={() => handleDelete(s)}><Trash2 size={17} /></IconAction>
+                        </>
+                      )}
+                      <AuditButton
+                        triggerClassName="grid place-items-center h-11 w-11 p-0"
+                        iconSize={18}
+                        rows={[
+                          { label: 'Registrado', value: `${s.createdByName} · ${formatDate(s.createdAt)}` },
+                          { label: 'Pedido', value: s.orderedByName ? `${s.orderedByName} · ${formatDate(s.orderedAt)}` : '—' },
+                        ]}
+                      />
+                    </CardActions>
+                  </MobileCard>
+                )
+              })}
+            </CardList>
+
             <Pagination page={page} totalPages={totalPages || 1}
               totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
           </>
@@ -456,6 +525,7 @@ function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelP
           <div className="flex justify-center py-12"><Spinner /></div>
         ) : (
           <>
+            <div className="hidden md:block">
             <Table>
               <TableHead>
                 <tr>
@@ -518,6 +588,56 @@ function PedidosPanel({ shortageType, label, createOpen, setCreateOpen }: PanelP
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            <CardList>
+              {orders.length === 0 && <CardEmpty>Nenhum pedido registrado.</CardEmpty>}
+              {orders.map((o) => (
+                <MobileCard
+                  key={o.id}
+                  onClick={() => navigate(`/shortage-orders/${o.id}`, { state: { from: `/shortages?tab=${shortageType}&view=PEDIDOS` } })}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-gray-900 break-words min-w-0 flex-1">{o.distributorName}</span>
+                    <ShortageOrderStatusBadge status={o.status} />
+                  </div>
+                  <div className="text-sm text-gray-400">{formatDate(o.createdAt)}</div>
+                  <CardActions>
+                    {o.status === 'PENDING' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          className="h-11 px-3 text-blue-500"
+                          onClick={(e) => { e.stopPropagation(); handleMarkOrdered(o.id, o.distributorName) }}
+                          disabled={markOrderedMutation.isPending}
+                        >
+                          <CheckCircle size={15} /> Pedido
+                        </Button>
+                        <IconAction
+                          label="Excluir"
+                          className="text-red-500"
+                          onClick={() => handleDelete(o.id, o.distributorName)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 size={17} />
+                        </IconAction>
+                      </>
+                    )}
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <AuditButton
+                        triggerClassName="grid place-items-center h-11 w-11 p-0"
+                        iconSize={18}
+                        rows={[
+                          { label: 'Criado', value: `${o.createdByName} · ${formatDate(o.createdAt)}` },
+                          { label: 'Pedido', value: o.orderedByName ? `${o.orderedByName} · ${formatDate(o.orderedAt)}` : '—' },
+                        ]}
+                      />
+                    </span>
+                  </CardActions>
+                </MobileCard>
+              ))}
+            </CardList>
+
             <Pagination
               page={page}
               totalPages={totalPages}
@@ -576,7 +696,7 @@ export function ShortagesPage() {
         }
       />
 
-      <div className="px-6 pt-4">
+      <div className="px-4 sm:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200">
           {tabs.map((t) => (
             <button
@@ -594,7 +714,7 @@ export function ShortagesPage() {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {activeTab === 'WANIA'
           ? <ShortageTab key="WANIA" shortageType="WANIA" label="Wania" activeView={activeView} onViewChange={setActiveView} createOpen={createOpen} setCreateOpen={setCreateOpen} />
           : <ShortageTab key="FRANCISCO" shortageType="FRANCISCO" label="Francisco" activeView={activeView} onViewChange={setActiveView} createOpen={createOpen} setCreateOpen={setCreateOpen} />

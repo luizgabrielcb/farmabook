@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Dialog } from '@/components/ui/dialog'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
@@ -59,7 +60,7 @@ export function DistributorsPage() {
     <div>
       <PageHeader title="Distribuidoras" description="Gerencie as distribuidoras cadastradas" />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="flex justify-end">
           <Button variant="primary" size="md" className="px-4" onClick={openCreate}>
             <Plus size={15} /> Nova distribuidora
@@ -70,45 +71,63 @@ export function DistributorsPage() {
           {isLoading ? (
             <div className="flex justify-center py-12"><Spinner /></div>
           ) : (
-            <Table>
-              <TableHead>
-                <tr>
-                  <Th>Nome</Th>
-                  <Th>Cadastrada em</Th>
-                  <Th />
-                </tr>
-              </TableHead>
-              <TableBody>
-                {(data?.content ?? []).length === 0 && (
+            <>
+              <div className="hidden md:block">
+              <Table>
+                <TableHead>
                   <tr>
-                    <Td colSpan={3} className="text-center text-gray-400 py-10">
-                      Nenhuma distribuidora cadastrada.
-                    </Td>
+                    <Th>Nome</Th>
+                    <Th>Cadastrada em</Th>
+                    <Th />
                   </tr>
-                )}
+                </TableHead>
+                <TableBody>
+                  {(data?.content ?? []).length === 0 && (
+                    <tr>
+                      <Td colSpan={3} className="text-center text-gray-400 py-10">
+                        Nenhuma distribuidora cadastrada.
+                      </Td>
+                    </tr>
+                  )}
+                  {(data?.content ?? []).map((d) => (
+                    <Tr key={d.id}>
+                      <Td>
+                        <span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={d.name}>
+                          {d.name}
+                        </span>
+                      </Td>
+                      <Td className="text-gray-500">{formatDateShort(d.createdAt)}</Td>
+                      <Td>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
+                            <Pencil size={12} />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
+                            onClick={() => handleDelete(d)}>
+                            <Trash2 size={12} />
+                          </Button>
+                        </div>
+                      </Td>
+                    </Tr>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+
+              <CardList>
+                {(data?.content ?? []).length === 0 && <CardEmpty>Nenhuma distribuidora cadastrada.</CardEmpty>}
                 {(data?.content ?? []).map((d) => (
-                  <Tr key={d.id}>
-                    <Td>
-                      <span className="font-medium text-gray-900 block max-w-[200px] break-words whitespace-normal" title={d.name}>
-                        {d.name}
-                      </span>
-                    </Td>
-                    <Td className="text-gray-500">{formatDateShort(d.createdAt)}</Td>
-                    <Td>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(d)}>
-                          <Pencil size={12} />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
-                          onClick={() => handleDelete(d)}>
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
-                    </Td>
-                  </Tr>
+                  <MobileCard key={d.id}>
+                    <div className="font-semibold text-gray-900 break-words">{d.name}</div>
+                    <div className="text-sm text-gray-400">Cadastrada: <span className="text-gray-700">{formatDateShort(d.createdAt)}</span></div>
+                    <CardActions>
+                      <IconAction label="Editar" onClick={() => openEdit(d)}><Pencil size={17} /></IconAction>
+                      <IconAction label="Excluir" className="text-red-500" onClick={() => handleDelete(d)}><Trash2 size={17} /></IconAction>
+                    </CardActions>
+                  </MobileCard>
                 ))}
-              </TableBody>
-            </Table>
+              </CardList>
+            </>
           )}
         </div>
       </div>

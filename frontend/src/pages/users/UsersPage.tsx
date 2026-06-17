@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Table, TableHead, TableBody, Th, Td, Tr } from '@/components/ui/table'
+import { CardList, MobileCard, CardActions, IconAction, CardEmpty } from '@/components/ui/mobile-card'
 import { Spinner } from '@/components/ui/spinner'
 import { Pagination } from '@/components/shared/Pagination'
 import { ErrorMessage } from '@/components/shared/ErrorMessage'
@@ -120,7 +121,7 @@ export function UsersPage() {
         }
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-3">
           <div className="relative max-w-sm">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -134,6 +135,7 @@ export function UsersPage() {
             <div className="flex justify-center py-12"><Spinner /></div>
           ) : (
             <>
+              <div className="hidden md:block">
               <Table>
                 <TableHead>
                   <tr><Th>Nome</Th><Th>Perfil</Th><Th>Status</Th><Th>Cadastrado em</Th><Th /></tr>
@@ -181,6 +183,29 @@ export function UsersPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+
+              <CardList>
+                {paged.length === 0 && <CardEmpty>{query ? 'Nenhum usuário encontrado.' : 'Nenhum usuário cadastrado.'}</CardEmpty>}
+                {paged.map((u) => (
+                  <MobileCard key={u.id}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-gray-900 break-words min-w-0 flex-1">{u.name}</span>
+                      <Badge variant={u.role === 'ADMIN' ? 'purple' : 'gray'}>{u.role === 'ADMIN' ? 'Admin' : 'Vendedor'}</Badge>
+                      <Badge variant={u.active ? 'green' : 'red'}>{u.active ? 'Ativo' : 'Inativo'}</Badge>
+                    </div>
+                    <div className="text-sm text-gray-400">Cadastrado: <span className="text-gray-700">{formatDateShort(u.createdAt)}</span></div>
+                    <CardActions>
+                      <IconAction label={u.active ? 'Desativar' : 'Ativar'} className={u.active ? 'text-green-600' : 'text-gray-400'} onClick={() => handleToggle(u)}>
+                        {u.active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                      </IconAction>
+                      <IconAction label="Editar" onClick={() => openEdit(u)}><Pencil size={17} /></IconAction>
+                      <IconAction label="Excluir" className="text-red-500" onClick={() => handleDelete(u)}><Trash2 size={17} /></IconAction>
+                    </CardActions>
+                  </MobileCard>
+                ))}
+              </CardList>
+
               <Pagination page={page} totalPages={totalPages || 1}
                 totalElements={filtered.length} size={PAGE_SIZE} onPageChange={setPage} />
             </>

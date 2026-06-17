@@ -54,3 +54,8 @@ export async function deleteShortageOrder(id: string): Promise<void> {
 export async function markShortageOrderAsOrdered(id: string): Promise<void> {
   await api.patch(`/shortage-orders/${id}/mark-as-ordered`)
 }
+
+export async function addShortageOrderItem(id: string, body: ShortageOrderItemInput): Promise<ShortageOrder> {
+  const { data } = await api.post<ShortageOrder>(`/shortage-orders/${id}/items`, body)
+  return data
+}
