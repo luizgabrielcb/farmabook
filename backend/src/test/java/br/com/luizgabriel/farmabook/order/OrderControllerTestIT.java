@@ -821,8 +821,6 @@ class OrderControllerTestIT extends IntegrationTestConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // --- PATCH payment/mark-as-paid ---
-
     @Test
     @Sql("/sql/order/insert-one-order-pending.sql")
     @DisplayName("PATCH .../payment/mark-as-paid should return 204 and set item payment to PAID when successful")
@@ -894,8 +892,6 @@ class OrderControllerTestIT extends IntegrationTestConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // --- PATCH payment/mark-as-make-note ---
-
     @Test
     @Sql("/sql/order/insert-one-order-pending.sql")
     @DisplayName("PATCH .../payment/mark-as-make-note should return 204 and set item payment to MAKE_NOTE when successful")
@@ -912,8 +908,6 @@ class OrderControllerTestIT extends IntegrationTestConfig {
         assertThat(item.getPaymentStatus()).isEqualTo(OrderPaymentStatus.MAKE_NOTE);
         assertThat(item.getPaymentChangedByName()).isEqualTo("User Teste");
     }
-
-    // --- PATCH payment/mark-as-noted ---
 
     @Test
     @Sql("/sql/order/insert-one-order-payment-make-note.sql")
@@ -948,8 +942,6 @@ class OrderControllerTestIT extends IntegrationTestConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // --- PATCH payment/mark-as-to-pay ---
 
     @Test
     @Sql("/sql/order/insert-one-order-payment-make-note.sql")

@@ -66,8 +66,6 @@ class OrderServiceTest {
 
     private static final UUID DISTRIBUTOR_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
 
-    // --- findAll ---
-
     @Test
     @DisplayName("findAll should return a page of orders when successful")
     void findAll_ReturnsPageOfOrders_WhenSuccessful() {
@@ -96,8 +94,6 @@ class OrderServiceTest {
         assertThat(result.getContent()).isEmpty();
     }
 
-    // --- findById ---
-
     @Test
     @DisplayName("findById should return OrderGetResponse when order is found")
     void findById_ReturnsOrderGetResponse_WhenSuccessful() {
@@ -122,8 +118,6 @@ class OrderServiceTest {
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // --- save ---
 
     @Test
     @DisplayName("save should return OrderPostResponse when successful")
@@ -161,8 +155,6 @@ class OrderServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
     }
-
-    // --- update ---
 
     @Test
     @DisplayName("update should return OrderPutResponse and update customer fields when successful")
@@ -209,8 +201,6 @@ class OrderServiceTest {
         assertThatThrownBy(() -> service.update(order.getId(), request))
                 .isInstanceOf(ConflictException.class);
     }
-
-    // --- delete ---
 
     @Test
     @DisplayName("delete should delete the order when successful")
@@ -262,8 +252,6 @@ class OrderServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).delete(ArgumentMatchers.any(Order.class));
     }
-
-    // --- addItem ---
 
     @Test
     @DisplayName("addItem should return OrderItemGetResponse when successful")
@@ -336,8 +324,6 @@ class OrderServiceTest {
 
         BDDMockito.then(orderItemRepository).should(Mockito.never()).save(ArgumentMatchers.any(OrderItem.class));
     }
-
-    // --- updateItem ---
 
     @Test
     @DisplayName("updateItem should return updated OrderItemGetResponse when successful")
@@ -442,8 +428,6 @@ class OrderServiceTest {
         assertThat(order.getPaymentStatus()).isEqualTo(OrderPaymentStatus.PAID);
     }
 
-    // --- deleteItem ---
-
     @Test
     @DisplayName("deleteItem should remove the item from the order when successful")
     void deleteItem_RemovesItem_WhenSuccessful() {
@@ -508,8 +492,6 @@ class OrderServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
-    // --- markItemAsOrdered ---
-
     @Test
     @DisplayName("markItemAsOrdered should set ORDERED status and stamp actor fields when successful")
     void markItemAsOrdered_SetsOrderedStatus_WhenSuccessful() {
@@ -570,8 +552,6 @@ class OrderServiceTest {
         assertThatThrownBy(() -> service.markItemAsOrdered(order.getId(), item.getId(), actor, DISTRIBUTOR_ID))
                 .isInstanceOf(ConflictException.class);
     }
-
-    // --- markItemAsReceived ---
 
     @Test
     @DisplayName("markItemAsReceived should set RECEIVED status, stamp actor fields, and trigger notification when order transitions to RECEIVED")
@@ -645,8 +625,6 @@ class OrderServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
-    // --- markItemAsDelivered ---
-
     @Test
     @DisplayName("markItemAsDelivered should set DELIVERED status and stamp actor fields when successful")
     void markItemAsDelivered_SetsDeliveredStatus_WhenSuccessful() {
@@ -701,8 +679,6 @@ class OrderServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
-    // --- markAllAsOrdered ---
-
     @Test
     @DisplayName("markAllAsOrdered should transition all non-DELIVERED items to ORDERED")
     void markAllAsOrdered_TransitionsAllEligibleItems_WhenSuccessful() {
@@ -732,8 +708,6 @@ class OrderServiceTest {
         assertThatThrownBy(() -> service.markAllAsOrdered(id, actor, DISTRIBUTOR_ID))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // --- markAllAsReceived ---
 
     @Test
     @DisplayName("markAllAsReceived should transition all ORDERED items to RECEIVED and trigger notification")
@@ -765,8 +739,6 @@ class OrderServiceTest {
                 .isInstanceOf(NotFoundException.class);
     }
 
-    // --- markAllAsDelivered ---
-
     @Test
     @DisplayName("markAllAsDelivered should transition all RECEIVED items to DELIVERED")
     void markAllAsDelivered_TransitionsAllEligibleItems_WhenSuccessful() {
@@ -793,8 +765,6 @@ class OrderServiceTest {
         assertThatThrownBy(() -> service.markAllAsDelivered(id, actor))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // --- markItemPaymentAsPaid ---
 
     @Test
     @DisplayName("markItemPaymentAsPaid should set PAID payment status and stamp actor when successful")
@@ -859,8 +829,6 @@ class OrderServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
     }
 
-    // --- markItemPaymentAsMakeNote ---
-
     @Test
     @DisplayName("markItemPaymentAsMakeNote should set MAKE_NOTE payment status when successful")
     void markItemPaymentAsMakeNote_SetsMakeNoteStatus_WhenSuccessful() {
@@ -924,8 +892,6 @@ class OrderServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
     }
 
-    // --- markItemPaymentAsNoted ---
-
     @Test
     @DisplayName("markItemPaymentAsNoted should set NOTED payment status when current is MAKE_NOTE")
     void markItemPaymentAsNoted_SetsNotedStatus_WhenMakeNote() {
@@ -972,8 +938,6 @@ class OrderServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Order.class));
     }
-
-    // --- markItemPaymentAsToPay ---
 
     @Test
     @DisplayName("markItemPaymentAsToPay should revert to TO_PAY payment status when current is MAKE_NOTE")

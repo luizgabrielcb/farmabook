@@ -54,8 +54,6 @@ class PrescriptionServiceTest {
     @Mock
     private CustomerService customerService;
 
-    // --- findAll ---
-
     @Test
     @DisplayName("findAll should return a page of prescriptions when successful")
     void findAll_ReturnsPageOfPrescriptions_WhenSuccessful() {
@@ -84,8 +82,6 @@ class PrescriptionServiceTest {
         assertThat(result.getContent()).isEmpty();
     }
 
-    // --- findById ---
-
     @Test
     @DisplayName("findById should return PrescriptionGetResponse when prescription is found")
     void findById_ReturnsPrescriptionGetResponse_WhenSuccessful() {
@@ -110,8 +106,6 @@ class PrescriptionServiceTest {
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // --- save ---
 
     @Test
     @DisplayName("save should return PrescriptionPostResponse when successful")
@@ -148,8 +142,6 @@ class PrescriptionServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Prescription.class));
     }
-
-    // --- update ---
 
     @Test
     @DisplayName("update should update customer and observations and return PrescriptionPutResponse when successful")
@@ -195,8 +187,6 @@ class PrescriptionServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
-    // --- delete ---
-
     @Test
     @DisplayName("delete should delete the prescription when successful")
     void delete_DeletesPrescription_WhenSuccessful() {
@@ -234,8 +224,6 @@ class PrescriptionServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).delete(ArgumentMatchers.any(Prescription.class));
     }
-
-    // --- addItem ---
 
     @Test
     @DisplayName("addItem should save and return the new item when successful")
@@ -283,8 +271,6 @@ class PrescriptionServiceTest {
 
         BDDMockito.then(itemRepository).should(Mockito.never()).save(ArgumentMatchers.any(PrescriptionItem.class));
     }
-
-    // --- updateItem ---
 
     @Test
     @DisplayName("updateItem should update item fields and return response when successful")
@@ -358,8 +344,6 @@ class PrescriptionServiceTest {
                 .isInstanceOf(ConflictException.class);
     }
 
-    // --- deleteItem ---
-
     @Test
     @DisplayName("deleteItem should remove the item from the prescription when successful")
     void deleteItem_RemovesItem_WhenSuccessful() {
@@ -421,8 +405,6 @@ class PrescriptionServiceTest {
         assertThatThrownBy(() -> service.deleteItem(prescription.getId(), receivedItem.getId()))
                 .isInstanceOf(ConflictException.class);
     }
-
-    // --- markItemAsReceived ---
 
     @Test
     @DisplayName("markItemAsReceived should set RECEIVED and transition prescription to FINISHED when it is the last pending item")
@@ -517,8 +499,6 @@ class PrescriptionServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Prescription.class));
     }
-
-    // --- markAllAsReceived ---
 
     @Test
     @DisplayName("markAllAsReceived should transition all PENDING items to RECEIVED and set prescription to FINISHED")

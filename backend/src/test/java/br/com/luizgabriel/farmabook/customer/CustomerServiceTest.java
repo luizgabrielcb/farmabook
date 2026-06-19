@@ -39,8 +39,6 @@ class CustomerServiceTest {
     @Mock
     private CustomerMapper mapper;
 
-    // --- save ---
-
     @Test
     @DisplayName("save should return CustomerPostResponse when successful")
     void save_ReturnsCustomerPostResponse_WhenSuccessful() {
@@ -68,7 +66,6 @@ class CustomerServiceTest {
         var response = utils.newCustomerPostResponse(customer);
 
         BDDMockito.when(repository.findByNameIgnoreCase(request.name())).thenReturn(Optional.empty());
-        // findByPhoneNumber not stubbed — must not be called when phoneNumber is null
         BDDMockito.when(mapper.toCustomer(request)).thenReturn(customer);
         BDDMockito.when(repository.save(customer)).thenReturn(customer);
         BDDMockito.when(mapper.toCustomerPostResponse(customer)).thenReturn(response);
@@ -109,8 +106,6 @@ class CustomerServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Customer.class));
     }
 
-    // --- findAll ---
-
     @Test
     @DisplayName("findAll should return a page of customers when successful")
     void findAll_ReturnsPageOfCustomers_WhenSuccessful() {
@@ -139,8 +134,6 @@ class CustomerServiceTest {
         assertThat(result.getContent()).isEmpty();
     }
 
-    // --- findById ---
-
     @Test
     @DisplayName("findById should return CustomerGetResponse when customer is found")
     void findById_ReturnsCustomerGetResponse_WhenSuccessful() {
@@ -165,8 +158,6 @@ class CustomerServiceTest {
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // --- update ---
 
     @Test
     @DisplayName("update should return CustomerPutResponse when successful")
@@ -279,7 +270,6 @@ class CustomerServiceTest {
 
         BDDMockito.when(repository.findById(customer.getId())).thenReturn(Optional.of(customer));
         BDDMockito.when(repository.findByNameIgnoreCase(request.name())).thenReturn(Optional.empty());
-        // findByPhoneNumber not stubbed — must not be called when phoneNumber is null
         BDDMockito.when(repository.save(customer)).thenReturn(customer);
         BDDMockito.when(mapper.toCustomerPutResponse(customer)).thenReturn(response);
 
@@ -288,8 +278,6 @@ class CustomerServiceTest {
         BDDMockito.then(repository).should().save(customer);
         BDDMockito.then(repository).should(Mockito.never()).findByPhoneNumber(ArgumentMatchers.any());
     }
-
-    // --- delete ---
 
     @Test
     @DisplayName("delete should delete the customer when successful")

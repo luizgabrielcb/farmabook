@@ -34,8 +34,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
     @Autowired
     private ShortageRepository shortageRepository;
 
-    // --- POST ---
-
     @Test
     @Sql("/sql/distributor/insert-one-distributor.sql")
     @DisplayName("POST /shortage-orders should return 201 and persist the order and its shortages when successful")
@@ -103,8 +101,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // --- POST items ---
 
     @Test
     @Sql("/sql/shortage-order/insert-one-shortage-order.sql")
@@ -189,8 +185,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // --- GET (list) ---
-
     @Test
     @Sql("/sql/shortage-order/insert-one-shortage-order.sql")
     @DisplayName("GET /shortage-orders should return 200 with a page filtered by shortage type when successful")
@@ -209,8 +203,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
                 .when(Option.IGNORING_EXTRA_FIELDS)
                 .isEqualTo(expected);
     }
-
-    // --- GET (by id) ---
 
     @Test
     @Sql("/sql/shortage-order/insert-one-shortage-order.sql")
@@ -246,8 +238,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // --- PUT ---
 
     @Test
     @Sql("/sql/shortage-order/insert-one-shortage-order.sql")
@@ -336,8 +326,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // --- DELETE ---
-
     @Test
     @Sql("/sql/shortage-order/insert-one-shortage-order.sql")
     @DisplayName("DELETE /shortage-orders/{id} should return 204 and soft-delete the order when successful")
@@ -404,8 +392,6 @@ class ShortageOrderControllerTestIT extends IntegrationTestConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // --- PATCH mark-as-ordered ---
 
     @Test
     @Sql("/sql/shortage-order/insert-one-shortage-order.sql")

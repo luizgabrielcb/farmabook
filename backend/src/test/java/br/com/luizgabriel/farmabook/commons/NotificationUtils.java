@@ -31,7 +31,6 @@ public class NotificationUtils {
                 .build();
     }
 
-    // Phone without country code — exercises the !startsWith("55") branch in sanitizePhone
     public Customer newCustomerWithLocalPhone() {
         return Customer.builder()
                 .id(CustomerUtils.CUSTOMER_ID)
@@ -40,7 +39,6 @@ public class NotificationUtils {
                 .build();
     }
 
-    // Single-word name — exercises the parts.length == 1 branch in shortenName
     public Customer newCustomerWithSingleName() {
         return Customer.builder()
                 .id(CustomerUtils.CUSTOMER_ID)
