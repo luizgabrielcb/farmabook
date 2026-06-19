@@ -333,4 +333,4 @@ farmabook/
 **Luiz Gabriel Costa Britto**
 
 - GitHub: [@luizgabrielcb](https://github.com/luizgabrielcb)
-- LinkedIn: https://www.linkedin.com/in/luizgabrielcbritto/
+- LinkedIn: [luizgabrielcbritto](https://www.linkedin.com/in/luizgabrielcbritto/)
