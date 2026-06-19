@@ -35,8 +35,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
     @Autowired
     private PrescriptionItemRepository prescriptionItemRepository;
 
-    // --- POST /prescriptions ---
-
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
     @DisplayName("POST /prescriptions should return 201 and persist prescription when successful")
@@ -122,8 +120,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
 
-    // --- GET /prescriptions ---
-
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
     @DisplayName("GET /prescriptions should return 200 and list of prescriptions")
@@ -138,8 +134,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
                 .body("content[0].customerName", Matchers.equalTo("Maria Silva"))
                 .body("content[0].status", Matchers.equalTo("PENDING"));
     }
-
-    // --- GET /prescriptions/{id} ---
 
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
@@ -172,8 +166,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
-
-    // --- PUT /prescriptions/{id} ---
 
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
@@ -238,8 +230,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
 
-    // --- DELETE /prescriptions/{id} ---
-
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
     @DisplayName("DELETE /prescriptions/{id} should return 204 and soft-delete when successful")
@@ -289,8 +279,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
-
-    // --- POST /prescriptions/{id}/items ---
 
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
@@ -354,8 +342,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
 
-    // --- PUT /prescriptions/{id}/items/{itemId} ---
-
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
     @DisplayName("PUT /prescriptions/{id}/items/{itemId} should return 200 and update the item when successful")
@@ -400,8 +386,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
 
-    // --- DELETE /prescriptions/{id}/items/{itemId} ---
-
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
     @DisplayName("DELETE /prescriptions/{id}/items/{itemId} should return 204 and remove the item when successful")
@@ -435,8 +419,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
         assertThat(prescriptionItemRepository.count()).isEqualTo(2);
     }
-
-    // --- PATCH /prescriptions/{id}/items/{itemId}/mark-as-received ---
 
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")
@@ -493,8 +475,6 @@ class PrescriptionControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).whenIgnoringPaths("message").isEqualTo(expected);
     }
-
-    // --- PATCH /prescriptions/{id}/mark-as-received ---
 
     @Test
     @Sql("/sql/prescription/insert-one-prescription-pending.sql")

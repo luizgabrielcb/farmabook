@@ -67,7 +67,7 @@ class NotificationServiceTest {
     @DisplayName("generateForOrderReceived should prepend Brazil country code when phone has no country code")
     void generateForOrderReceived_PrependsBrazilCountryCode_WhenPhoneHasNoCountryCode() {
         var order = utils.newOrder();
-        var customer = utils.newCustomerWithLocalPhone(); // "(11) 99999-9999"
+        var customer = utils.newCustomerWithLocalPhone();
 
         var saved = utils.newNotification(order, customer);
 
@@ -86,7 +86,7 @@ class NotificationServiceTest {
     @DisplayName("generateForOrderReceived should use the single name in the message when customer has only one name")
     void generateForOrderReceived_UsesSingleName_WhenCustomerHasOnlyOneName() {
         var order = utils.newOrder();
-        var customer = utils.newCustomerWithSingleName(); // "Joao"
+        var customer = utils.newCustomerWithSingleName();
 
         var saved = utils.newNotification(order, customer);
 
@@ -114,8 +114,6 @@ class NotificationServiceTest {
 
         BDDMockito.then(notificationRepository).should(Mockito.never()).save(ArgumentMatchers.any(Notification.class));
     }
-
-    // --- generateForCompoundingReceived ---
 
     @Test
     @DisplayName("generateForCompoundingReceived should persist notification and return response when successful")
@@ -169,8 +167,6 @@ class NotificationServiceTest {
 
         BDDMockito.then(notificationRepository).should(Mockito.never()).save(ArgumentMatchers.any(Notification.class));
     }
-
-    // --- findAllByCompoundingId ---
 
     @Test
     @DisplayName("findAllByCompoundingId should return a page of notifications when successful")

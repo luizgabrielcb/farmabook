@@ -29,8 +29,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
     @Autowired
     private CompoundingRepository compoundingRepository;
 
-    // ---- GET /compoundings ----
-
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
     @DisplayName("GET /compoundings should return 200 with a page when successful")
@@ -56,8 +54,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
                         "pageable", "last", "first", "size", "number", "sort", "numberOfElements", "empty")
                 .isEqualTo(expected);
     }
-
-    // ---- GET /compoundings/{id} ----
 
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
@@ -98,13 +94,10 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // ---- POST /compoundings ----
-
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
     @DisplayName("POST /compoundings should return 201 and persist compounding when successful")
     void save_ReturnsCreated_WhenSuccessful() {
-        // delete the one inserted by SQL so we can create fresh
         compoundingRepository.deleteAll();
 
         var request = fileUtils.readResourceFile("compounding/post-request-compounding.json");
@@ -161,8 +154,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // ---- PUT /compoundings/{id} ----
 
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
@@ -247,8 +238,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // ---- DELETE /compoundings/{id} ----
-
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
     @DisplayName("DELETE /compoundings/{id} should return 204 and soft-delete when successful")
@@ -316,8 +305,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // ---- PATCH /compoundings/{id}/mark-as-ordered ----
 
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
@@ -389,8 +376,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // ---- PATCH /compoundings/{id}/mark-as-received ----
 
     @Test
     @Sql("/sql/compounding/insert-one-compounding-ordered.sql")
@@ -482,8 +467,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // ---- PATCH /compoundings/{id}/mark-as-delivered ----
-
     @Test
     @Sql("/sql/compounding/insert-one-compounding-received.sql")
     @DisplayName("PATCH /compoundings/{id}/mark-as-delivered should return 204 and transition when successful")
@@ -555,8 +538,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // ---- PATCH /compoundings/{id}/payment/mark-as-paid ----
-
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
     @DisplayName("PATCH /compoundings/{id}/payment/mark-as-paid should return 204 when successful")
@@ -625,8 +606,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // ---- PATCH /compoundings/{id}/payment/mark-as-make-note ----
 
     @Test
     @Sql("/sql/compounding/insert-one-compounding-pending.sql")
@@ -715,8 +694,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
 
-    // ---- PATCH /compoundings/{id}/payment/mark-as-noted ----
-
     @Test
     @Sql("/sql/compounding/insert-one-compounding-make-note.sql")
     @DisplayName("PATCH /compoundings/{id}/payment/mark-as-noted should return 204 when successful")
@@ -785,8 +762,6 @@ class CompoundingControllerTestIT extends AuthenticatedIntegrationConfig {
 
         JsonAssertions.assertThatJson(body).isEqualTo(expected);
     }
-
-    // ---- PATCH /compoundings/{id}/payment/mark-as-to-pay ----
 
     @Test
     @Sql("/sql/compounding/insert-one-compounding-make-note.sql")

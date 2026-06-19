@@ -64,8 +64,6 @@ class CompoundingServiceTest {
     @Mock
     private NotificationService notificationService;
 
-    // ---- findAll ----
-
     @Test
     @DisplayName("findAll should return a page of compoundings when successful")
     void findAll_ReturnsPageOfCompoundings_WhenSuccessful() {
@@ -94,8 +92,6 @@ class CompoundingServiceTest {
         assertThat(result.getContent()).isEmpty();
     }
 
-    // ---- findById ----
-
     @Test
     @DisplayName("findById should return CompoundingGetResponse when found")
     void findById_ReturnsGetResponse_WhenSuccessful() {
@@ -120,8 +116,6 @@ class CompoundingServiceTest {
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // ---- save ----
 
     @Test
     @DisplayName("save should return CompoundingPostResponse when successful")
@@ -177,8 +171,6 @@ class CompoundingServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
 
-    // ---- update ----
-
     @Test
     @DisplayName("update should return CompoundingGetResponse when successful")
     void update_ReturnsGetResponse_WhenSuccessful() {
@@ -228,8 +220,6 @@ class CompoundingServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
 
-    // ---- delete ----
-
     @Test
     @DisplayName("delete should delete compounding when successful")
     void delete_DeletesCompounding_WhenSuccessful() {
@@ -267,8 +257,6 @@ class CompoundingServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).delete(ArgumentMatchers.any(Compounding.class));
     }
-
-    // ---- markAsOrdered ----
 
     @Test
     @DisplayName("markAsOrdered should set ORDERED status when successful")
@@ -315,8 +303,6 @@ class CompoundingServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
-
-    // ---- markAsReceived ----
 
     @Test
     @DisplayName("markAsReceived should set RECEIVED status and fire notification when successful")
@@ -402,8 +388,6 @@ class CompoundingServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
 
-    // ---- markAsDelivered ----
-
     @Test
     @DisplayName("markAsDelivered should set DELIVERED status when successful")
     void markAsDelivered_SetsDeliveredStatus_WhenSuccessful() {
@@ -450,8 +434,6 @@ class CompoundingServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
 
-    // ---- markAsPaid ----
-
     @Test
     @DisplayName("markAsPaid should set PAID payment status when successful")
     void markAsPaid_SetsPaidStatus_WhenSuccessful() {
@@ -494,8 +476,6 @@ class CompoundingServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
-
-    // ---- markAsMakeNote ----
 
     @Test
     @DisplayName("markAsMakeNote should set MAKE_NOTE payment status when successful")
@@ -554,8 +534,6 @@ class CompoundingServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
 
-    // ---- markAsNoted ----
-
     @Test
     @DisplayName("markAsNoted should set NOTED payment status when successful from MAKE_NOTE")
     void markAsNoted_SetsNotedStatus_WhenMakeNote() {
@@ -598,8 +576,6 @@ class CompoundingServiceTest {
 
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(Compounding.class));
     }
-
-    // ---- markAsToPay ----
 
     @Test
     @DisplayName("markAsToPay should revert payment status to TO_PAY when current is MAKE_NOTE")

@@ -54,8 +54,6 @@ class ShortageOrderServiceTest {
     @Mock
     private ShortageMapper shortageMapper;
 
-    // --- save ---
-
     @Test
     @DisplayName("save should create the shortage order and its shortages when successful")
     void save_ReturnsShortageOrderGetResponse_WhenSuccessful() {
@@ -96,8 +94,6 @@ class ShortageOrderServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(ShortageOrder.class));
         BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
     }
-
-    // --- addItem ---
 
     @Test
     @DisplayName("addItem should create a new shortage linked to the order and return the updated order when PENDING")
@@ -151,8 +147,6 @@ class ShortageOrderServiceTest {
         BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
     }
 
-    // --- findAll ---
-
     @Test
     @DisplayName("findAll should query by shortage type only when distributorId is null")
     void findAll_QueriesByShortageType_WhenDistributorIdIsNull() {
@@ -191,8 +185,6 @@ class ShortageOrderServiceTest {
                 .findByShortageType(ArgumentMatchers.any(), ArgumentMatchers.any());
     }
 
-    // --- findById ---
-
     @Test
     @DisplayName("findById should return ShortageOrderGetResponse with its shortages when successful")
     void findById_ReturnsShortageOrderGetResponse_WhenSuccessful() {
@@ -221,8 +213,6 @@ class ShortageOrderServiceTest {
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(NotFoundException.class);
     }
-
-    // --- delete ---
 
     @Test
     @DisplayName("delete should remove the shortage order and its shortages when PENDING")
@@ -265,8 +255,6 @@ class ShortageOrderServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).delete(ArgumentMatchers.any(ShortageOrder.class));
         BDDMockito.then(shortageRepository).should(Mockito.never()).delete(ArgumentMatchers.any(Shortage.class));
     }
-
-    // --- markAsOrdered ---
 
     @Test
     @DisplayName("markAsOrdered should set ORDERED status on the order and its pending shortages when successful")
@@ -317,8 +305,6 @@ class ShortageOrderServiceTest {
         BDDMockito.then(repository).should(Mockito.never()).save(ArgumentMatchers.any(ShortageOrder.class));
         BDDMockito.then(shortageRepository).should(Mockito.never()).save(ArgumentMatchers.any(Shortage.class));
     }
-
-    // --- update ---
 
     @Test
     @DisplayName("update should return ShortageOrderGetResponse with updated distributor and observations when successful")
