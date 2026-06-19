@@ -37,7 +37,9 @@ public class NotificationService {
         if (customer.getPhoneNumber() == null || customer.getPhoneNumber().isBlank()) {
             return Optional.empty();
         }
+
         Notification saved = persistNotification(customer, "encomenda", order, null);
+
         return Optional.of(notificationMapper.toNotificationGetResponse(saved));
     }
 
@@ -47,7 +49,9 @@ public class NotificationService {
         if (customer.getPhoneNumber() == null || customer.getPhoneNumber().isBlank()) {
             return Optional.empty();
         }
+
         Notification saved = persistNotification(customer, "manipulação", null, compounding);
+
         return Optional.of(notificationMapper.toNotificationGetResponse(saved));
     }
 
@@ -81,7 +85,6 @@ public class NotificationService {
     }
 
     private Notification persistNotification(Customer customer, String itemType, Order order, Compounding compounding) {
-
         var phone = sanitizePhone(customer.getPhoneNumber());
         var message = buildMessage(customer.getName(), itemType);
         var link = buildWaMeLink(phone, message);

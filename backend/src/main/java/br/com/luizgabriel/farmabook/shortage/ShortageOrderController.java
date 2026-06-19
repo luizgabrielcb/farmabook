@@ -30,8 +30,12 @@ public class ShortageOrderController {
     public ResponseEntity<ShortageOrderGetResponse> save(
             @RequestHeader("X-Auth-Pin") String pin,
             @RequestBody @Valid ShortageOrderPostRequest request) {
+
         var actor = authService.authenticatedUser(pin);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(request, actor));
+
+        var response = service.save(request, actor);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
@@ -39,12 +43,17 @@ public class ShortageOrderController {
             @RequestParam ShortageType shortageType,
             @RequestParam(required = false) UUID distributorId,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(service.findAll(shortageType, distributorId, pageable));
+
+        var response = service.findAll(shortageType, distributorId, pageable);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ShortageOrderGetResponse> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(service.findById(id));
+        var response = service.findById(id);
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
@@ -52,8 +61,12 @@ public class ShortageOrderController {
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin,
             @RequestBody @Valid ShortageOrderPutRequest request) {
+
         authService.authenticatedUser(pin);
-        return ResponseEntity.ok(service.update(id, request));
+
+        var response = service.update(id, request);
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/items")
@@ -61,14 +74,20 @@ public class ShortageOrderController {
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin,
             @RequestBody @Valid ShortageOrderItemRequest request) {
+
         var actor = authService.authenticatedUser(pin);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.addItem(id, request, actor));
+
+        var response = service.addItem(id, request, actor);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id, @RequestHeader("X-Auth-Pin") String pin) {
         authService.authenticatedUser(pin);
+
         service.delete(id);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -76,8 +95,11 @@ public class ShortageOrderController {
     public ResponseEntity<Void> markAsOrdered(
             @PathVariable UUID id,
             @RequestHeader("X-Auth-Pin") String pin) {
+
         var actor = authService.authenticatedUser(pin);
+
         service.markAsOrdered(id, actor);
+
         return ResponseEntity.noContent().build();
     }
 }

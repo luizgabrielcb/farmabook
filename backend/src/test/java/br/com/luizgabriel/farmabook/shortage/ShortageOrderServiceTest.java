@@ -225,7 +225,7 @@ class ShortageOrderServiceTest {
 
         service.delete(order.getId());
 
-        BDDMockito.then(shortageRepository).should().delete(shortage);
+        BDDMockito.then(shortageRepository).should().deleteAll(List.of(shortage));
         BDDMockito.then(repository).should().delete(order);
     }
 

@@ -74,10 +74,12 @@ public class ShortageOrderService {
     @Transactional(readOnly = true)
     public ShortageOrderGetResponse findById(UUID id) {
         var order = findByIdOrThrowNotFound(id);
+
         List<ShortageGetResponse> shortageResponses = shortageRepository.findAllByShortageOrderId(id)
                 .stream()
                 .map(shortageMapper::toShortageGetResponse)
                 .toList();
+
         return mapper.toShortageOrderGetResponse(order, shortageResponses);
     }
 
@@ -89,6 +91,7 @@ public class ShortageOrderService {
         }
 
         var distributor = distributorService.findByIdOrThrowNotFound(request.distributorId());
+
         order.setDistributorId(distributor.getId());
         order.setDistributorName(distributor.getName());
         order.setObservations(request.observations());
@@ -98,6 +101,7 @@ public class ShortageOrderService {
                 .stream()
                 .map(shortageMapper::toShortageGetResponse)
                 .toList();
+
         return mapper.toShortageOrderGetResponse(order, shortageResponses);
     }
 
@@ -125,6 +129,7 @@ public class ShortageOrderService {
                 .stream()
                 .map(shortageMapper::toShortageGetResponse)
                 .toList();
+
         return mapper.toShortageOrderGetResponse(order, shortageResponses);
     }
 
@@ -134,7 +139,8 @@ public class ShortageOrderService {
         if (order.getStatus() != ShortageOrderStatus.PENDING) {
             throw new ConflictException("Shortage order with id '" + id + "' is not PENDING and cannot be deleted");
         }
-        shortageRepository.findAllByShortageOrderId(id).forEach(shortageRepository::delete);
+
+        shortageRepository.deleteAll(shortageRepository.findAllByShortageOrderId(id));
         repository.delete(order);
     }
 
