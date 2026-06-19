@@ -7,7 +7,7 @@
 Sistema de gestão de encomendas, faltas, manipulações e receitas para farmácias.
 
 [![CI](https://github.com/luizgabrielcb/farmabook/actions/workflows/ci.yml/badge.svg)](https://github.com/luizgabrielcb/farmabook/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-451%20passing-success)
+![Tests](https://img.shields.io/badge/tests-459%20passing-success)
 ![Coverage](https://img.shields.io/badge/coverage-94%25%20line-success)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white)
