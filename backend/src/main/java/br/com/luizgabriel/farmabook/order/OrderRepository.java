@@ -1,7 +1,5 @@
 package br.com.luizgabriel.farmabook.order;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,7 +10,4 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     @EntityGraph(attributePaths = "items")
     Optional<Order> findWithItemsById(UUID id);
-
-    @EntityGraph(attributePaths = "items")
-    Page<Order> findAll(Pageable pageable);
 }

@@ -31,9 +31,17 @@ public interface OrderMapper {
     @Mapping(target = "totalPrice", expression = "java(computeTotalPrice(order))")
     OrderGetResponse toOrderGetResponse(Order order);
 
+    @Mapping(target = "items", source = "orderItems")
+    @Mapping(target = "totalPrice", expression = "java(computeTotalPrice(order, orderItems))")
+    OrderGetResponse toOrderGetResponse(Order order, List<OrderItem> orderItems);
+
     default BigDecimal computeTotalPrice(Order order) {
-        if (order.getItems() != null) {
-            var total = order.getItems().stream()
+        return computeTotalPrice(order, order.getItems());
+    }
+
+    default BigDecimal computeTotalPrice(Order order, List<OrderItem> items) {
+        if (items != null) {
+            var total = items.stream()
                     .filter(i -> i.getPrice() != null)
                     .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);

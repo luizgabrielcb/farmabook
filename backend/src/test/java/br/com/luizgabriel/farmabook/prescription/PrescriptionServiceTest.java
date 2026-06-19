@@ -63,7 +63,8 @@ class PrescriptionServiceTest {
         var page = new PageImpl<>(List.of(prescription));
 
         BDDMockito.when(repository.findAll(pageable)).thenReturn(page);
-        BDDMockito.when(mapper.toPrescriptionGetResponse(prescription)).thenReturn(response);
+        BDDMockito.when(itemRepository.findAllByPrescriptionIdIn(List.of(prescription.getId()))).thenReturn(List.of());
+        BDDMockito.when(mapper.toPrescriptionGetResponse(prescription, List.of())).thenReturn(response);
 
         var result = service.findAll(pageable);
 
