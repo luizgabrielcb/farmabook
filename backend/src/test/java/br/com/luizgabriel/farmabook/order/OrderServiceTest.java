@@ -75,7 +75,8 @@ class OrderServiceTest {
         var page = new PageImpl<>(List.of(order));
 
         BDDMockito.when(repository.findAll(pageable)).thenReturn(page);
-        BDDMockito.when(mapper.toOrderGetResponse(order)).thenReturn(response);
+        BDDMockito.when(orderItemRepository.findAllByOrderIdIn(List.of(order.getId()))).thenReturn(List.of());
+        BDDMockito.when(mapper.toOrderGetResponse(order, List.of())).thenReturn(response);
 
         var result = service.findAll(pageable);
 

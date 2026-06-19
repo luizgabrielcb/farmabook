@@ -27,6 +27,9 @@ public interface PrescriptionMapper {
 
     PrescriptionGetResponse toPrescriptionGetResponse(Prescription prescription);
 
+    @Mapping(target = "items", source = "prescriptionItems")
+    PrescriptionGetResponse toPrescriptionGetResponse(Prescription prescription, List<PrescriptionItem> prescriptionItems);
+
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "prescription", ignore = true)
     @Mapping(target = "status", constant = "PENDING")

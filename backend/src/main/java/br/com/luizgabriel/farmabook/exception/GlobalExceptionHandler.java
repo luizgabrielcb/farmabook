@@ -81,36 +81,43 @@ public class GlobalExceptionHandler {
                 .message("Malformed JSON request")
                 .status(HttpStatus.BAD_REQUEST.value())
                 .build();
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<DefaultErrorMessage> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
         var message = "Invalid value for parameter '" + e.getName() + "'";
+
         var error = DefaultErrorMessage.builder()
                 .message(message)
                 .status(HttpStatus.BAD_REQUEST.value())
                 .build();
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<DefaultErrorMessage> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         log.warn("Data integrity violation", e);
+
         var error = DefaultErrorMessage.builder()
                 .message("Data integrity violation")
                 .status(HttpStatus.CONFLICT.value())
                 .build();
+
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<DefaultErrorMessage> handleGeneric(Exception e) {
         log.error("Unexpected error", e);
+
         var error = DefaultErrorMessage.builder()
                 .message("Internal server error")
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .build();
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

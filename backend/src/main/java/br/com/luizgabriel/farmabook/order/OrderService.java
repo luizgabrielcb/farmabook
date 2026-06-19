@@ -16,7 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,17 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public Page<OrderGetResponse> findAll(Pageable pageable) {
-        return repository.findAll(pageable).map(mapper::toOrderGetResponse);
+        var orderPage = repository.findAll(pageable);
+
+        var orderIds = orderPage.getContent().stream().map(Order::getId).toList();
+
+        Map<UUID, List<OrderItem>> itemsByOrderId = orderIds.isEmpty()
+                ? Map.of()
+                : orderItemRepository.findAllByOrderIdIn(orderIds).stream()
+                        .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+
+        return orderPage.map(order ->
+                mapper.toOrderGetResponse(order, itemsByOrderId.getOrDefault(order.getId(), List.of())));
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +93,7 @@ public class OrderService {
         order.setCustomerName(customer.getName());
         order.setObservations(request.observations());
         order.setTotalPrice(request.totalPrice());
+
         if (request.totalPrice() != null) {
             order.getItems().forEach(item -> item.setPrice(null));
         }
@@ -113,7 +127,6 @@ public class OrderService {
 
         if (request.paymentStatus() != null) {
             item.setPaymentStatus(request.paymentStatus());
-            // Carimba a auditoria quando o item já entra num status diferente do padrão
             if (request.paymentStatus() != OrderPaymentStatus.TO_PAY) {
                 stampPaymentChange(item, actor);
             }
@@ -248,12 +261,16 @@ public class OrderService {
     @Transactional
     public void markItemPaymentAsPaid(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
+
         var item = findItemOrThrowNotFound(order, itemId);
+
         if (item.getPaymentStatus() == OrderPaymentStatus.NOTED) {
             throw new ConflictException("Item with id '" + itemId + "' payment is NOTED and cannot be changed");
         }
+
         item.setPaymentStatus(OrderPaymentStatus.PAID);
         stampPaymentChange(item, actor);
+
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
@@ -261,15 +278,19 @@ public class OrderService {
     @Transactional
     public void markItemPaymentAsMakeNote(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
+
         var item = findItemOrThrowNotFound(order, itemId);
+
         if (item.getPaymentStatus() == OrderPaymentStatus.PAID) {
             throw new ConflictException("Item with id '" + itemId + "' payment is PAID and cannot be changed");
         }
         if (item.getPaymentStatus() == OrderPaymentStatus.NOTED) {
             throw new ConflictException("Item with id '" + itemId + "' payment is NOTED and cannot be changed");
         }
+
         item.setPaymentStatus(OrderPaymentStatus.MAKE_NOTE);
         stampPaymentChange(item, actor);
+
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
@@ -277,12 +298,16 @@ public class OrderService {
     @Transactional
     public void markItemPaymentAsNoted(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
+
         var item = findItemOrThrowNotFound(order, itemId);
+
         if (item.getPaymentStatus() != OrderPaymentStatus.MAKE_NOTE) {
             throw new ConflictException("Item with id '" + itemId + "' payment must be MAKE_NOTE to transition to NOTED");
         }
+
         item.setPaymentStatus(OrderPaymentStatus.NOTED);
         stampPaymentChange(item, actor);
+
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
@@ -290,12 +315,16 @@ public class OrderService {
     @Transactional
     public void markItemPaymentAsToPay(UUID orderId, UUID itemId, User actor) {
         var order = findByIdWithItemsOrThrowNotFound(orderId);
+
         var item = findItemOrThrowNotFound(order, itemId);
+
         if (item.getPaymentStatus() != OrderPaymentStatus.MAKE_NOTE) {
             throw new ConflictException("Item with id '" + itemId + "' payment must be MAKE_NOTE to revert to TO_PAY");
         }
+
         item.setPaymentStatus(OrderPaymentStatus.TO_PAY);
         stampPaymentChange(item, actor);
+
         recalculateOrderPaymentStatus(order);
         repository.save(order);
     }
@@ -375,6 +404,7 @@ public class OrderService {
                 .map(OrderItem::getPaymentStatus)
                 .min(Comparator.naturalOrder())
                 .orElse(OrderPaymentStatus.TO_PAY);
+
         order.setPaymentStatus(minPaymentStatus);
     }
 
@@ -393,7 +423,6 @@ public class OrderService {
         boolean transitionedToReceived =
                 previousStatus.ordinal() < OrderStatus.RECEIVED.ordinal()
                         && newStatus == OrderStatus.RECEIVED;
-
 
         if (transitionedToReceived) {
             notificationService.generateForOrderReceived(order)

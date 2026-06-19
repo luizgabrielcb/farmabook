@@ -12,7 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +35,9 @@ public class PrescriptionService {
         var prescription = mapper.toPrescription(request, customer, actor);
 
         var items = mapper.toPrescriptionItems(request.items());
+
         items.forEach(item -> item.setPrescription(prescription));
+
         prescription.setItems(items);
 
         var saved = repository.save(prescription);
@@ -42,12 +47,23 @@ public class PrescriptionService {
 
     @Transactional(readOnly = true)
     public Page<PrescriptionGetResponse> findAll(Pageable pageable) {
-        return repository.findAll(pageable).map(mapper::toPrescriptionGetResponse);
+        var prescriptionPage = repository.findAll(pageable);
+
+        var prescriptionIds = prescriptionPage.getContent().stream().map(Prescription::getId).toList();
+
+        Map<UUID, List<PrescriptionItem>> itemsByPrescriptionId = prescriptionIds.isEmpty()
+                ? Map.of()
+                : itemRepository.findAllByPrescriptionIdIn(prescriptionIds).stream()
+                        .collect(Collectors.groupingBy(item -> item.getPrescription().getId()));
+
+        return prescriptionPage.map(prescription -> mapper.toPrescriptionGetResponse(
+                prescription, itemsByPrescriptionId.getOrDefault(prescription.getId(), List.of())));
     }
 
     @Transactional(readOnly = true)
     public PrescriptionGetResponse findById(UUID id) {
         var prescription = findByIdWithItemsOrThrowNotFound(id);
+
         return mapper.toPrescriptionGetResponse(prescription);
     }
 
@@ -60,6 +76,7 @@ public class PrescriptionService {
         var customer = request.customerId() != null
                 ? customerService.findByIdOrThrowNotFound(request.customerId())
                 : null;
+
         prescription.setCustomerId(customer != null ? customer.getId() : null);
         prescription.setCustomerName(customer != null ? customer.getName() : null);
         prescription.setObservations(request.observations());
@@ -70,7 +87,9 @@ public class PrescriptionService {
     @Transactional
     public void delete(UUID id) {
         var prescription = findByIdWithItemsOrThrowNotFound(id);
+
         ensureMutable(prescription);
+
         repository.delete(prescription);
     }
 

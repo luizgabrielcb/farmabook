@@ -28,19 +28,26 @@ public class PrescriptionController {
             @RequestBody @Valid PrescriptionPostRequest request) {
 
         var actor = authService.authenticatedUser(pin);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(request, actor));
+
+        var response = service.save(request, actor);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
     public ResponseEntity<Page<PrescriptionGetResponse>> findAll(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        return ResponseEntity.ok(service.findAll(pageable));
+        var response = service.findAll(pageable);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PrescriptionGetResponse> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(service.findById(id));
+        var response = service.findById(id);
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
@@ -50,7 +57,10 @@ public class PrescriptionController {
             @RequestBody @Valid PrescriptionPutRequest request) {
 
         authService.authenticatedUser(pin);
-        return ResponseEntity.ok(service.update(id, request));
+
+        var response = service.update(id, request);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
@@ -59,7 +69,9 @@ public class PrescriptionController {
             @RequestHeader("X-Auth-Pin") String pin) {
 
         authService.authenticatedUser(pin);
+
         service.delete(id);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -70,7 +82,10 @@ public class PrescriptionController {
             @RequestBody @Valid PrescriptionItemPostRequest request) {
 
         authService.authenticatedUser(pin);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.addItem(id, request));
+
+        var response = service.addItem(id, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}/items/{itemId}")
@@ -81,7 +96,10 @@ public class PrescriptionController {
             @RequestBody @Valid PrescriptionItemPutRequest request) {
 
         authService.authenticatedUser(pin);
-        return ResponseEntity.ok(service.updateItem(id, itemId, request));
+
+        var response = service.updateItem(id, itemId, request);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
@@ -91,7 +109,9 @@ public class PrescriptionController {
             @RequestHeader("X-Auth-Pin") String pin) {
 
         authService.authenticatedUser(pin);
+
         service.deleteItem(id, itemId);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -102,7 +122,9 @@ public class PrescriptionController {
             @RequestHeader("X-Auth-Pin") String pin) {
 
         var actor = authService.authenticatedUser(pin);
+
         service.markItemAsReceived(id, itemId, actor);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -112,7 +134,9 @@ public class PrescriptionController {
             @RequestHeader("X-Auth-Pin") String pin) {
 
         var actor = authService.authenticatedUser(pin);
+
         service.markAllAsReceived(id, actor);
+
         return ResponseEntity.noContent().build();
     }
 }

@@ -4,10 +4,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface PrescriptionItemRepository extends JpaRepository<PrescriptionItem, UUID> {
 
     @Query("SELECT COUNT(i) FROM PrescriptionItem i WHERE i.prescription.id = :prescriptionId")
     long countActiveByPrescriptionId(@Param("prescriptionId") UUID prescriptionId);
+
+    @Query("SELECT i FROM PrescriptionItem i WHERE i.prescription.id IN :prescriptionIds")
+    List<PrescriptionItem> findAllByPrescriptionIdIn(@Param("prescriptionIds") List<UUID> prescriptionIds);
 }
